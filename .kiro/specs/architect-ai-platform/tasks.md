@@ -2,56 +2,71 @@
 
 ## Sprint 1 — Project Foundation
 
-- [ ] 1. Repository scaffolding
-  - [ ] 1.1 Initialize package.json with TypeScript, ESLint, Prettier, and project scripts (build, dev, test, lint)
-  - [ ] 1.2 Create tsconfig.json with strict mode and path aliases
-  - [ ] 1.3 Create directory structure matching design document (src/api, src/generation, src/rag, src/llm, src/telemetry, src/prompts, src/db, src/config)
-  - [ ] 1.4 Create .env.example with all required environment variables documented
-  - [ ] 1.5 Create .gitignore for node_modules, dist, .env, logs
-- [ ] 2. Docker Compose setup @depends(1)
-  - [ ] 2.1 Create Dockerfile with multi-stage build (builder + runner with node:slim)
-  - [ ] 2.2 Create docker-compose.yml with app service, PostgreSQL pgvector, and Ollama as optional profile
-  - [ ] 2.3 Configure health checks for all services
-  - [ ] 2.4 Create .dockerignore excluding tests, src, docs
-- [ ] 3. Environment configuration module @depends(1)
-  - [ ] 3.1 Create src/config/index.ts that reads and validates all environment variables with typed defaults
-  - [ ] 3.2 Fail startup if JWT_SECRET is missing or matches placeholder value
-  - [ ] 3.3 Validate LLM_PROVIDER is in allowed list (openrouter, openai, ollama, mock)
-  - [ ] 3.4 Support independent LLM and embedding provider configuration
-- [ ] 4. Structured logging @depends(1)
-  - [ ] 4.1 Install and configure pino logger with JSON output to stdout
-  - [ ] 4.2 Create src/logger.ts exporting configured logger with timestamp, level, module fields
-  - [ ] 4.3 Configure LOG_LEVEL from environment variable (default: info)
-- [ ] 5. PostgreSQL connection pool @depends(2, 3)
-  - [ ] 5.1 Create src/db/connection.ts with pg pool using DATABASE_URL from config
-  - [ ] 5.2 Implement graceful shutdown (drain pool on SIGTERM/SIGINT)
-  - [ ] 5.3 Log connection errors with diagnostic context
-- [ ] 6. Database migration system @depends(5)
-  - [ ] 6.1 Create migration runner that executes numbered .sql files in order on startup
-  - [ ] 6.2 Track applied migrations in a migrations table to skip already-applied
-  - [ ] 6.3 Create 001-initial-schema.sql with pgvector extension and users table with seeded admin
-- [ ] 7. Full MVP database schema @depends(6)
-  - [ ] 7.1 Create migration for projects table with owner_id, name, description, config JSONB
-  - [ ] 7.2 Create migration for artifacts table with type, content JSONB, provenance columns
-  - [ ] 7.3 Create migration for indexed_chunks table with vector column and HNSW index
-  - [ ] 7.4 Create migration for generation_telemetry table with timing and token fields
-  - [ ] 7.5 Create migration for artifact_feedback table with rating enum
-- [ ] 8. Express application setup @depends(3, 4)
-  - [ ] 8.1 Create src/api/index.ts with Express app, JSON body parser (1MB limit), CORS
-  - [ ] 8.2 Create src/api/middleware/error-handler.ts returning { error: { code, message, details } }
-  - [ ] 8.3 Create src/index.ts entry point that initializes config, logger, DB, migrations, and starts Express
-- [ ] 9. Health check endpoint @depends(5, 8)
-  - [ ] 9.1 Create GET /api/health that checks database connectivity via SELECT 1
-  - [ ] 9.2 Return { status, components: { database, llm } } with appropriate HTTP status
-- [ ] 10. JWT authentication @depends(6, 8)
-  - [ ] 10.1 Create POST /api/auth/login validating credentials and issuing 24h JWT
-  - [ ] 10.2 Create src/api/middleware/auth.ts extracting and validating Bearer token
-  - [ ] 10.3 Return 401 with appropriate message for missing, expired, or invalid tokens
-- [ ] 11. LLMClient interface and mock provider @depends(1)
-  - [ ] 11.1 Create src/llm/interface.ts with LLMClient interface and request/response types
-  - [ ] 11.2 Create src/llm/providers/mock.ts with configurable responses and call recording
-  - [ ] 11.3 Create src/llm/factory.ts instantiating correct provider from LLM_PROVIDER config
-- [ ] 12. Prompt loader and versioning @depends(1)
-  - [ ] 12.1 Create initial prompt files (spec-v1.md, architecture-v1.md, tasks-v1.md, retry-v1.md)
-  - [ ] 12.2 Create src/prompts/loader.ts loading .md files and parsing name-version from filename
-  - [ ] 12.3 Fail startup with clear error if required prompt files are missing
+- [x] 1. Repository scaffolding
+- [x] 2. Docker Compose setup
+- [x] 3. Environment configuration module
+- [x] 4. Structured logging
+- [x] 5. PostgreSQL connection pool
+- [x] 6. Database migration system
+- [x] 7. Full MVP database schema
+- [x] 8. Express application setup
+- [x] 9. Health check endpoint
+- [x] 10. JWT authentication
+- [x] 11. LLMClient interface and mock provider
+- [x] 12. Prompt loader and versioning
+
+## Sprint 2 — Generate (Provider → SpecGen → Context Manager → RAG)
+
+- [ ] 13. OpenRouter provider implementation @depends(11)
+  - [ ] 13.1 Create src/llm/providers/openrouter.ts implementing LLMClient with chat completions and embeddings
+  - [ ] 13.2 Handle authentication, model selection, timeout (60s), and token extraction from response
+  - [ ] 13.3 Handle rate limiting (429) and error responses with clear messages
+- [ ] 14. OpenAI provider implementation @depends(11)
+  - [ ] 14.1 Create src/llm/providers/openai.ts implementing LLMClient for chat completions
+  - [ ] 14.2 Implement embedding via /v1/embeddings with configurable model and dimensions
+  - [ ] 14.3 Handle rate limits, quota errors, and API errors gracefully
+- [ ] 15. Update LLM factory with real providers @depends(13, 14)
+  - [ ] 15.1 Wire OpenRouter and OpenAI providers into factory switch statement
+  - [ ] 15.2 Validate that API key is present when cloud provider is selected
+- [ ] 16. Output validator with zod schemas @depends(11)
+  - [ ] 16.1 Create src/generation/output-validator.ts with JSON parse + zod validation
+  - [ ] 16.2 Handle markdown code block extraction before JSON parse
+  - [ ] 16.3 Return structured ValidationResult with raw output on failure
+- [ ] 17. Retry logic @depends(16, 12)
+  - [ ] 17.1 Create src/generation/retry.ts with generateWithValidation helper
+  - [ ] 17.2 Retry once on JSON parse or schema failure with stricter prompt
+  - [ ] 17.3 Never retry timeout or connection errors, max 1 retry
+- [ ] 18. Zod schemas for generated artifacts @depends(16)
+  - [ ] 18.1 Create SpecificationSchema (functionalRequirements, acceptanceCriteria, constraints, dependencies)
+  - [ ] 18.2 Create ArchitectureDocumentSchema (components, dependencyGraph, boundedContexts, solidNotes)
+  - [ ] 18.3 Create TaskBreakdownSchema (tasks with acceptanceCriteria, complexity, dependsOn)
+- [ ] 19. Specification generator @depends(15, 17, 18, 12)
+  - [ ] 19.1 Create src/generation/spec-generator.ts calling LLM with spec-v1 prompt
+  - [ ] 19.2 Assemble user prompt with delimited sections (injection protection)
+  - [ ] 19.3 Validate output against SpecificationSchema with retry
+  - [ ] 19.4 Return typed Specification with generation provenance
+- [ ] 20. Context Window Manager @depends(11)
+  - [ ] 20.1 Create src/generation/context-window.ts with fitToContext method
+  - [ ] 20.2 Calculate budget: contextWindow - system - input - reservedOutput = available for RAG
+  - [ ] 20.3 Progressively include chunks (highest similarity first) until budget exhausted
+  - [ ] 20.4 Log truncation events when chunks are dropped
+- [ ] 21. File parser @depends(1)
+  - [ ] 21.1 Create src/rag/file-parser.ts reading files from directory with extension filter
+  - [ ] 21.2 Support .ts, .js, .md, .json, .yaml, .yml, .txt, .py, .java, .go
+  - [ ] 21.3 Respect .architectai-ignore file, skip node_modules/.git/binary/files >1MB
+- [ ] 22. Fixed-size chunker @depends(1)
+  - [ ] 22.1 Create src/rag/chunker.ts splitting at paragraph boundaries
+  - [ ] 22.2 Each chunk <= configured token count (default 512, estimated via chars/4)
+  - [ ] 22.3 Guarantee round-trip property: concat(chunks) === original
+- [ ] 23. RAG indexer @depends(21, 22, 14)
+  - [ ] 23.1 Create src/rag/indexer.ts orchestrating parse → chunk → embed → store
+  - [ ] 23.2 Delete existing chunks for project before re-indexing
+  - [ ] 23.3 Skip failed files gracefully, return indexing summary
+- [ ] 24. RAG retriever @depends(23, 20)
+  - [ ] 24.1 Create src/rag/retriever.ts querying pgvector with cosine similarity
+  - [ ] 24.2 Filter by project_id and minimum similarity threshold
+  - [ ] 24.3 Return chunks sorted by similarity, limited to top-k
+- [ ] 25. Integrate RAG into spec generator @depends(19, 24, 20)
+  - [ ] 25.1 Update spec generator to retrieve RAG context before generation
+  - [ ] 25.2 Pass RAG chunks through Context Window Manager before prompt assembly
+  - [ ] 25.3 Include fitted chunks in delimited CONTEXT section
