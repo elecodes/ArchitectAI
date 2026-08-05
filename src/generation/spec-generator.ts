@@ -1,10 +1,9 @@
 import type { LLMClient } from '../llm/interface.js';
 import type { LoadedPrompt } from '../prompts/loader.js';
 import type { RAGChunk } from '../rag/types.js';
-import type { FitResult } from './context-window.js';
 import { ContextWindowManager } from './context-window.js';
 import { OutputValidator } from './output-validator.js';
-import { generateWithValidation, type GenerationResult } from './retry.js';
+import { generateWithValidation } from './retry.js';
 import { SpecificationSchema, type Specification } from './schemas.js';
 import { createChildLogger } from '../logger.js';
 

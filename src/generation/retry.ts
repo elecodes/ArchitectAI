@@ -1,5 +1,5 @@
 import type { LLMClient, CompletionRequest, CompletionResponse } from '../llm/interface.js';
-import type { OutputValidator, ValidationResult } from './output-validator.js';
+import type { OutputValidator } from './output-validator.js';
 import type { LoadedPrompt } from '../prompts/loader.js';
 import { z } from 'zod';
 import { createChildLogger } from '../logger.js';
