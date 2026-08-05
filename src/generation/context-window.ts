@@ -1,12 +1,7 @@
+import type { RAGChunk } from '../rag/types.js';
 import { createChildLogger } from '../logger.js';
 
 const log = createChildLogger('context-window');
-
-export interface RAGChunk {
-  content: string;
-  filePath: string;
-  similarity: number;
-}
 
 export interface ContextBudget {
   modelContextWindow: number;

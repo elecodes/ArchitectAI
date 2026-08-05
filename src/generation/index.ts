@@ -10,5 +10,5 @@ export {
 export type { Specification, ArchitectureDocument, TaskBreakdown } from './schemas.js';
 export type { ValidationResult } from './output-validator.js';
 export type { GenerationResult } from './retry.js';
-export type { RAGChunk, ContextBudget, FitResult } from './context-window.js';
+export type { ContextBudget, FitResult } from './context-window.js';
 export type { GenerationProvenance, SpecGenerationInput, SpecGenerationResult } from './spec-generator.js';

@@ -1,6 +1,6 @@
 import type { Pool } from 'pg';
 import type { LLMClient } from '../llm/interface.js';
-import type { RAGChunk } from '../generation/context-window.js';
+import type { RAGChunk } from './types.js';
 import { createChildLogger } from '../logger.js';
 
 const log = createChildLogger('rag-retriever');
