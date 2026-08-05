@@ -1,0 +1,57 @@
+# Tasks
+
+## Sprint 1 — Project Foundation
+
+- [ ] 1. Repository scaffolding
+  - [ ] 1.1 Initialize package.json with TypeScript, ESLint, Prettier, and project scripts (build, dev, test, lint)
+  - [ ] 1.2 Create tsconfig.json with strict mode and path aliases
+  - [ ] 1.3 Create directory structure matching design document (src/api, src/generation, src/rag, src/llm, src/telemetry, src/prompts, src/db, src/config)
+  - [ ] 1.4 Create .env.example with all required environment variables documented
+  - [ ] 1.5 Create .gitignore for node_modules, dist, .env, logs
+- [ ] 2. Docker Compose setup @depends(1)
+  - [ ] 2.1 Create Dockerfile with multi-stage build (builder + runner with node:slim)
+  - [ ] 2.2 Create docker-compose.yml with app service, PostgreSQL pgvector, and Ollama as optional profile
+  - [ ] 2.3 Configure health checks for all services
+  - [ ] 2.4 Create .dockerignore excluding tests, src, docs
+- [ ] 3. Environment configuration module @depends(1)
+  - [ ] 3.1 Create src/config/index.ts that reads and validates all environment variables with typed defaults
+  - [ ] 3.2 Fail startup if JWT_SECRET is missing or matches placeholder value
+  - [ ] 3.3 Validate LLM_PROVIDER is in allowed list (openrouter, openai, ollama, mock)
+  - [ ] 3.4 Support independent LLM and embedding provider configuration
+- [ ] 4. Structured logging @depends(1)
+  - [ ] 4.1 Install and configure pino logger with JSON output to stdout
+  - [ ] 4.2 Create src/logger.ts exporting configured logger with timestamp, level, module fields
+  - [ ] 4.3 Configure LOG_LEVEL from environment variable (default: info)
+- [ ] 5. PostgreSQL connection pool @depends(2, 3)
+  - [ ] 5.1 Create src/db/connection.ts with pg pool using DATABASE_URL from config
+  - [ ] 5.2 Implement graceful shutdown (drain pool on SIGTERM/SIGINT)
+  - [ ] 5.3 Log connection errors with diagnostic context
+- [ ] 6. Database migration system @depends(5)
+  - [ ] 6.1 Create migration runner that executes numbered .sql files in order on startup
+  - [ ] 6.2 Track applied migrations in a migrations table to skip already-applied
+  - [ ] 6.3 Create 001-initial-schema.sql with pgvector extension and users table with seeded admin
+- [ ] 7. Full MVP database schema @depends(6)
+  - [ ] 7.1 Create migration for projects table with owner_id, name, description, config JSONB
+  - [ ] 7.2 Create migration for artifacts table with type, content JSONB, provenance columns
+  - [ ] 7.3 Create migration for indexed_chunks table with vector column and HNSW index
+  - [ ] 7.4 Create migration for generation_telemetry table with timing and token fields
+  - [ ] 7.5 Create migration for artifact_feedback table with rating enum
+- [ ] 8. Express application setup @depends(3, 4)
+  - [ ] 8.1 Create src/api/index.ts with Express app, JSON body parser (1MB limit), CORS
+  - [ ] 8.2 Create src/api/middleware/error-handler.ts returning { error: { code, message, details } }
+  - [ ] 8.3 Create src/index.ts entry point that initializes config, logger, DB, migrations, and starts Express
+- [ ] 9. Health check endpoint @depends(5, 8)
+  - [ ] 9.1 Create GET /api/health that checks database connectivity via SELECT 1
+  - [ ] 9.2 Return { status, components: { database, llm } } with appropriate HTTP status
+- [ ] 10. JWT authentication @depends(6, 8)
+  - [ ] 10.1 Create POST /api/auth/login validating credentials and issuing 24h JWT
+  - [ ] 10.2 Create src/api/middleware/auth.ts extracting and validating Bearer token
+  - [ ] 10.3 Return 401 with appropriate message for missing, expired, or invalid tokens
+- [ ] 11. LLMClient interface and mock provider @depends(1)
+  - [ ] 11.1 Create src/llm/interface.ts with LLMClient interface and request/response types
+  - [ ] 11.2 Create src/llm/providers/mock.ts with configurable responses and call recording
+  - [ ] 11.3 Create src/llm/factory.ts instantiating correct provider from LLM_PROVIDER config
+- [ ] 12. Prompt loader and versioning @depends(1)
+  - [ ] 12.1 Create initial prompt files (spec-v1.md, architecture-v1.md, tasks-v1.md, retry-v1.md)
+  - [ ] 12.2 Create src/prompts/loader.ts loading .md files and parsing name-version from filename
+  - [ ] 12.3 Fail startup with clear error if required prompt files are missing
