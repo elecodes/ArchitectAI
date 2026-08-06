@@ -10,6 +10,43 @@ interface Artifacts {
   tasks?: any;
 }
 
+function FeedbackWidget({ artifactId }: { artifactId: string }) {
+  const [submitted, setSubmitted] = useState<string | null>(null);
+
+  async function handleFeedback(rating: 'helpful' | 'needs_improvement') {
+    try {
+      await api.submitFeedback(artifactId, rating);
+      setSubmitted(rating);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  if (submitted) {
+    return <p className="text-xs text-gray-400 mt-4">Thanks for your feedback!</p>;
+  }
+
+  return (
+    <div className="mt-4 pt-4 border-t flex items-center gap-3">
+      <span className="text-xs text-gray-500">Was this helpful?</span>
+      <button
+        onClick={() => handleFeedback('helpful')}
+        className="text-lg hover:scale-110 transition"
+        title="Helpful"
+      >
+        👍
+      </button>
+      <button
+        onClick={() => handleFeedback('needs_improvement')}
+        className="text-lg hover:scale-110 transition"
+        title="Needs improvement"
+      >
+        👎
+      </button>
+    </div>
+  );
+}
+
 export default function Generate() {
   const { id: projectId } = useParams<{ id: string }>();
   const [project, setProject] = useState<any>(null);
@@ -98,13 +135,122 @@ export default function Generate() {
   function renderArtifactContent(artifact: any) {
     if (!artifact) return null;
     const content = artifact.content;
-    return (
-      <div className="prose prose-sm max-w-none">
-        <pre className="bg-gray-50 p-4 rounded-md overflow-auto text-xs">
-          {JSON.stringify(content, null, 2)}
-        </pre>
-      </div>
-    );
+
+    if (activeTab === 'spec') {
+      return (
+        <div className="space-y-6">
+          <section>
+            <h3 className="font-semibold text-sm text-gray-700 mb-2">Functional Requirements</h3>
+            {content.functionalRequirements?.map((r: any) => (
+              <div key={r.id} className="p-3 bg-gray-50 rounded mb-2">
+                <div className="flex justify-between">
+                  <span className="font-mono text-xs text-blue-600">{r.id}</span>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded ${r.priority === 'must' ? 'bg-red-100 text-red-700' : r.priority === 'should' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}
+                  >
+                    {r.priority}
+                  </span>
+                </div>
+                <p className="text-sm mt-1">{r.description}</p>
+              </div>
+            ))}
+          </section>
+          <section>
+            <h3 className="font-semibold text-sm text-gray-700 mb-2">Acceptance Criteria</h3>
+            <ul className="space-y-1">
+              {content.acceptanceCriteria?.map((c: string, i: number) => (
+                <li key={i} className="text-sm text-gray-600 pl-4 border-l-2 border-blue-200">
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </section>
+          {content.constraints?.length > 0 && (
+            <section>
+              <h3 className="font-semibold text-sm text-gray-700 mb-2">Constraints</h3>
+              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                {content.constraints.map((c: string, i: number) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {content.dependencies?.length > 0 && (
+            <section>
+              <h3 className="font-semibold text-sm text-gray-700 mb-2">Dependencies</h3>
+              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                {content.dependencies.map((d: string, i: number) => (
+                  <li key={i}>{d}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      );
+    }
+
+    if (activeTab === 'architecture') {
+      return (
+        <div className="space-y-6">
+          <section>
+            <h3 className="font-semibold text-sm text-gray-700 mb-2">Components</h3>
+            {content.components?.map((c: any, i: number) => (
+              <div key={i} className="p-3 bg-gray-50 rounded mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{c.name}</span>
+                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                    {c.layer}
+                  </span>
+                </div>
+                <ul className="mt-1 text-xs text-gray-500 list-disc list-inside">
+                  {c.responsibilities?.map((r: string, j: number) => <li key={j}>{r}</li>)}
+                </ul>
+              </div>
+            ))}
+          </section>
+          {content.boundedContexts?.length > 0 && (
+            <section>
+              <h3 className="font-semibold text-sm text-gray-700 mb-2">Bounded Contexts</h3>
+              {content.boundedContexts.map((bc: any, i: number) => (
+                <div key={i} className="p-3 bg-gray-50 rounded mb-2">
+                  <span className="font-medium text-sm">{bc.name}</span>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Aggregates: {bc.aggregates?.join(', ')}
+                  </p>
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
+      );
+    }
+
+    if (activeTab === 'tasks') {
+      return (
+        <div className="space-y-3">
+          <p className="text-xs text-gray-500 mb-4">
+            Coverage: {content.traceabilityCoverage || 'N/A'}% • {content.tasks?.length || 0} tasks
+          </p>
+          {content.tasks?.map((t: any) => (
+            <div key={t.id} className="p-3 bg-gray-50 rounded">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="font-mono text-xs text-blue-600">{t.id}</span>
+                  <span className="font-medium text-sm ml-2">{t.title}</span>
+                </div>
+                <span className="text-xs px-2 py-0.5 bg-gray-200 rounded">{t.complexity}/5</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">{t.description}</p>
+              {t.dependsOn?.length > 0 && (
+                <p className="text-xs text-gray-400 mt-1">Depends on: {t.dependsOn.join(', ')}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return null;
   }
 
   async function handleExport() {
@@ -320,6 +466,7 @@ export default function Generate() {
             {/* Content */}
             <div className="bg-white p-6 rounded-lg border">
               {renderArtifactContent(artifacts[activeTab])}
+              {artifacts[activeTab] && <FeedbackWidget artifactId={artifacts[activeTab].id} />}
             </div>
           </div>
         )}

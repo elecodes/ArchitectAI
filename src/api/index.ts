@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
 import { healthRouter } from './routes/health.js';
 import { authRouter } from './routes/auth.js';
 import { projectsRouter } from './routes/projects.js';
@@ -31,6 +34,18 @@ export function createApp() {
   app.use('/api', generationRouter);
   app.use('/api/artifacts', artifactsRouter);
   app.use('/api/artifacts', feedbackRouter);
+
+  // Serve frontend static files in production
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const publicDir = join(__dirname, '..', 'public');
+  if (existsSync(publicDir)) {
+    app.use(express.static(publicDir));
+    // SPA fallback — serve index.html for non-API routes
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
+      res.sendFile(join(publicDir, 'index.html'));
+    });
+  }
 
   // 404 handler
   app.use(notFoundHandler);
