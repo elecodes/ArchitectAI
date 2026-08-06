@@ -70,3 +70,76 @@
   - [ ] 25.1 Update spec generator to retrieve RAG context before generation
   - [ ] 25.2 Pass RAG chunks through Context Window Manager before prompt assembly
   - [ ] 25.3 Include fitted chunks in delimited CONTEXT section
+
+## Sprint 2.5 — Testing, Security, and CI
+
+### Testing
+
+- [ ] 26. Unit tests for Context Window Manager @depends(20)
+  - [ ] 26.1 Property test: total tokens (system + input + RAG + reserved) never exceeds context window
+  - [ ] 26.2 Property test: chunks are included in similarity-descending order
+  - [ ] 26.3 Edge case: input alone exceeds budget → returns empty chunks, truncated=true
+  - [ ] 26.4 Edge case: zero RAG chunks → returns empty, truncated=false
+  - [ ] 26.5 Edge case: all chunks fit → returns all, truncated=false
+- [ ] 27. Unit tests for Output Validator and Retry @depends(16, 17)
+  - [ ] 27.1 Test: valid JSON matching schema → success
+  - [ ] 27.2 Test: markdown-wrapped JSON → extracted and validated correctly
+  - [ ] 27.3 Test: invalid JSON → triggers retry with stricter prompt
+  - [ ] 27.4 Test: valid JSON but missing zod fields → triggers retry
+  - [ ] 27.5 Test: both attempts fail → throws GenerationError with diagnostics
+  - [ ] 27.6 Test: timeout error from LLM → NOT retried, thrown immediately
+- [ ] 28. Unit tests for Chunker @depends(22)
+  - [ ] 28.1 Property test: concatenation of all chunks equals original text (round-trip)
+  - [ ] 28.2 Property test: every chunk tokenCount <= configured max
+  - [ ] 28.3 Edge case: empty string → returns empty array
+  - [ ] 28.4 Edge case: single paragraph exceeding max → returned as single chunk
+- [ ] 29. Unit tests for Spec Generator @depends(19)
+  - [ ] 29.1 Test with mock LLM returning valid spec JSON → returns typed Specification
+  - [ ] 29.2 Test with mock LLM returning invalid JSON → retries once, succeeds on second attempt
+  - [ ] 29.3 Test prompt assembly includes CONTEXT delimiters when RAG chunks provided
+  - [ ] 29.4 Test prompt assembly has no CONTEXT section when zero RAG chunks
+  - [ ] 29.5 Test provenance includes correct model, prompt version, retry count
+- [ ] 30. Integration test for generation pipeline @depends(19, 20)
+  - [ ] 30.1 Create test with mock LLM: input → context window fit → generate → validate → return
+  - [ ] 30.2 Verify telemetry-ready metadata returned (tokens, duration, chunks used)
+  - [ ] 30.3 Verify RAG chunks are truncated when budget exceeded (large input + many chunks)
+
+### LLM Security (OWASP Top 10 for LLM Applications)
+
+- [ ] 31. Prompt injection hardening @depends(19)
+  - [ ] 31.1 Add instruction boundary markers in all system prompts (clear separation of instructions vs data)
+  - [ ] 31.2 Add output schema enforcement: reject LLM output that contains instruction-like patterns outside expected JSON
+  - [ ] 31.3 Add input sanitization for known injection markers (ignore previous, system:, assistant:) — log and strip, don't block
+  - [ ] 31.4 Test: RAG chunk containing "ignore all previous instructions" does NOT alter generation output format
+- [ ] 32. RAG namespace isolation @depends(24)
+  - [ ] 32.1 Add integration test proving cross-project isolation (index project A, query as project B → zero results)
+  - [ ] 32.2 Verify WHERE project_id clause is parameterized (no SQL injection via project_id)
+  - [ ] 32.3 Add index on project_id + file_path for efficient deletion during re-index
+- [ ] 33. Request rate limiting @depends(8)
+  - [ ] 33.1 Add express-rate-limit middleware (100 req/min for general, 10 req/min for generation endpoints)
+  - [ ] 33.2 Return 429 with Retry-After header when limit exceeded
+  - [ ] 33.3 Rate limits configurable via environment variables
+- [ ] 34. .architectai-ignore enforcement @depends(21)
+  - [ ] 34.1 Unit test: files matching .architectai-ignore patterns are never indexed
+  - [ ] 34.2 Add default patterns to skip: .env, .env._, _.key, _.pem, id_rsa, secrets._
+  - [ ] 34.3 Log every ignored file with reason for audit trail
+- [ ] 35. Input size limits and validation @depends(19)
+  - [ ] 35.1 Enforce description length 10-50000 characters at API layer (zod)
+  - [ ] 35.2 Reject empty or whitespace-only descriptions
+  - [ ] 35.3 Limit maximum RAG project size (500 files, logged warning at 400)
+  - [ ] 35.4 Test: oversized input returns 400 with clear error message
+
+### Documentation
+
+- [ ] 36. Security ADR and threat model @depends(31, 32, 33, 34)
+  - [ ] 36.1 Create ADR-0014: LLM Security Mitigations (OWASP Top 10 alignment)
+  - [ ] 36.2 Create docs/security/threat-model.md with attack surface, mitigations, and residual risks
+  - [ ] 36.3 Document which OWASP LLM Top 10 items are addressed and which are deferred
+
+### CI Pipeline
+
+- [ ] 37. GitHub Actions CI workflow @depends(26, 27, 28)
+  - [ ] 37.1 Create .github/workflows/ci.yml running on push and PR to main
+  - [ ] 37.2 Jobs: lint (eslint), typecheck (tsc --noEmit), test (vitest run)
+  - [ ] 37.3 Use Node.js 20, cache node_modules via actions/cache
+  - [ ] 37.4 Fail pipeline if any job fails
