@@ -152,14 +152,18 @@ export class MockLLMClient implements LLMClient {
     });
 
     // Detect which schema is expected based on system prompt content
+    // Check tasks FIRST — its prompt mentions "architecture" too, so order matters
     let defaultResponse = MOCK_SPEC;
     if (
+      request.systemPrompt.includes('planner') ||
+      request.systemPrompt.includes('break it into')
+    ) {
+      defaultResponse = MOCK_TASKS;
+    } else if (
       request.systemPrompt.includes('architecture') ||
       request.systemPrompt.includes('components')
     ) {
       defaultResponse = MOCK_ARCHITECTURE;
-    } else if (request.systemPrompt.includes('task') || request.systemPrompt.includes('planner')) {
-      defaultResponse = MOCK_TASKS;
     }
 
     const responses = this.mockConfig.completionResponses || [defaultResponse];
