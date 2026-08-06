@@ -32,7 +32,22 @@ export class MockLLMClient implements LLMClient {
       await new Promise(resolve => setTimeout(resolve, this.mockConfig.latencyMs));
     }
 
-    const responses = this.mockConfig.completionResponses || ['{"result": "mock response"}'];
+    const DEFAULT_MOCK_RESPONSE = JSON.stringify({
+      functionalRequirements: [
+        { id: 'FR-1', description: 'The system shall authenticate users via email and password', priority: 'must' },
+        { id: 'FR-2', description: 'The system shall issue JWT tokens upon successful authentication', priority: 'must' },
+        { id: 'FR-3', description: 'The system shall validate JWT tokens on protected endpoints', priority: 'must' },
+      ],
+      acceptanceCriteria: [
+        'WHEN a user submits valid credentials THEN the system SHALL return a JWT token',
+        'WHEN a user submits invalid credentials THEN the system SHALL return 401',
+        'WHEN a token expires THEN the system SHALL reject the request with 401',
+      ],
+      constraints: ['Passwords must be hashed with bcrypt', 'Tokens expire in 24 hours'],
+      dependencies: ['PostgreSQL database', 'bcrypt library', 'jsonwebtoken library'],
+    });
+
+    const responses = this.mockConfig.completionResponses || [DEFAULT_MOCK_RESPONSE];
     const content = responses[this.completionIndex % responses.length];
     this.completionIndex++;
 
