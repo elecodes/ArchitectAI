@@ -7,6 +7,7 @@ import { generationRouter } from './routes/generation.js';
 import { artifactsRouter } from './routes/artifacts.js';
 import { feedbackRouter } from './routes/feedback.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
+import { generalLimiter, generationLimiter } from './middleware/rate-limiter.js';
 
 export function createApp() {
   const app = express();
@@ -14,6 +15,12 @@ export function createApp() {
   // Middleware
   app.use(cors({ origin: 'http://localhost:3000' }));
   app.use(express.json({ limit: '1mb' }));
+
+  // Rate limiting
+  app.use(generalLimiter);
+  app.use('/api/specs', generationLimiter);
+  app.use('/api/architecture', generationLimiter);
+  app.use('/api/tasks', generationLimiter);
 
   // Public routes
   app.use('/api', healthRouter);

@@ -53,6 +53,12 @@ router.post('/specs', authMiddleware, async (req: AuthenticatedRequest, res) => 
     return;
   }
 
+  // Reject whitespace-only descriptions
+  if (!input.data.description.trim()) {
+    res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Description cannot be whitespace only' } });
+    return;
+  }
+
   const project = await projectRepo.getProject(input.data.projectId, req.userId!);
   if (!project) {
     res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Project not found' } });

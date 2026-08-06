@@ -5,6 +5,8 @@ export interface TextChunk {
 }
 
 export function chunkText(content: string, maxTokens: number = 512): TextChunk[] {
+  if (!content.trim()) return []; // Handle empty/whitespace-only input
+
   const chunks: TextChunk[] = [];
   const paragraphs = content.split('\n\n');
   let current = '';

@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, extname, relative } from 'node:path';
+import { join, extname, relative, basename } from 'node:path';
 import { createChildLogger } from '../logger.js';
 
 const log = createChildLogger('file-parser');
@@ -12,6 +12,22 @@ const SUPPORTED_EXTENSIONS = new Set([
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '.next', '__pycache__']);
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
 
+const DEFAULT_IGNORE_PATTERNS = [
+  '.env',
+  '.env.*',
+  '*.key',
+  '*.pem',
+  '*.p12',
+  '*.pfx',
+  'id_rsa',
+  'id_ed25519',
+  'secrets.*',
+  '*.secret',
+  'credentials.*',
+  '.aws/',
+  '.ssh/',
+];
+
 export interface ParsedFile {
   filePath: string;
   content: string;
@@ -21,6 +37,36 @@ export interface ParsedFile {
 export interface ParseResult {
   files: ParsedFile[];
   skipped: { path: string; reason: string }[];
+}
+
+/**
+ * Check if a file path matches a simple glob pattern.
+ * Supports: *.ext, prefix.*, exact match, directory/ prefix.
+ */
+function matchesPattern(relativePath: string, pattern: string): boolean {
+  const fileName = basename(relativePath);
+
+  // Directory pattern (e.g., '.aws/')
+  if (pattern.endsWith('/')) {
+    const dirName = pattern.slice(0, -1);
+    return relativePath.startsWith(dirName + '/') || relativePath.includes('/' + dirName + '/') || fileName === dirName;
+  }
+
+  // Wildcard patterns
+  if (pattern.startsWith('*.')) {
+    // *.ext — match by extension
+    const ext = pattern.slice(1); // e.g., '.key'
+    return fileName.endsWith(ext);
+  }
+
+  if (pattern.includes('.*')) {
+    // prefix.* — match files starting with prefix followed by dot
+    const prefix = pattern.split('.*')[0];
+    return fileName.startsWith(prefix + '.') || fileName === prefix;
+  }
+
+  // Exact filename match
+  return fileName === pattern;
 }
 
 export function parseProjectFiles(rootDir: string, ignorePatterns: string[] = []): ParseResult {
@@ -50,7 +96,14 @@ export function parseProjectFiles(rootDir: string, ignorePatterns: string[] = []
       // Skip directories
       if (SKIP_DIRS.has(entry)) continue;
 
-      // Check ignore patterns (simple glob-free matching)
+      // Check default security patterns FIRST
+      if (DEFAULT_IGNORE_PATTERNS.some(p => matchesPattern(relativePath, p))) {
+        log.info({ path: relativePath }, 'security: matches default sensitive pattern');
+        skipped.push({ path: relativePath, reason: 'security: matches default sensitive pattern' });
+        continue;
+      }
+
+      // Check user-provided ignore patterns
       if (ignorePatterns.some(p => relativePath.includes(p))) {
         skipped.push({ path: relativePath, reason: 'matched ignore pattern' });
         continue;
