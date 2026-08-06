@@ -93,3 +93,13 @@ Phase 2 (AWS):
 - CI/CD pipeline
 
 AWS is a deployment target for Phase 2. It must NOT appear in MVP implementation.
+
+## Implementation Checklist
+
+Before implementing any feature:
+
+1. Verify it aligns with the ADRs.
+2. Verify it does not introduce unnecessary abstractions.
+3. Prefer the simplest implementation that satisfies the requirements.
+4. If a proposed solution adds complexity without immediate value, stop and explain why before implementing it.
+5. The goal is to build a maintainable AI product, not an AI framework.
