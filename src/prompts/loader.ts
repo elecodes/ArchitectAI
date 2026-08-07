@@ -11,12 +11,20 @@ export interface LoadedPrompt {
   tokenEstimate: number;
 }
 
-const REQUIRED_PROMPTS = ['spec', 'architecture', 'tasks', 'retry'];
+const REQUIRED_PROMPTS = [
+  'spec',
+  'architecture',
+  'tasks',
+  'retry',
+  'review-summary',
+  'review-engineering',
+  'review-improvements',
+];
 
 export function loadPrompts(promptsDir: string): Map<string, LoadedPrompt> {
   const prompts = new Map<string, LoadedPrompt>();
 
-  const files = readdirSync(promptsDir).filter(f => f.endsWith('.md'));
+  const files = readdirSync(promptsDir).filter((f) => f.endsWith('.md'));
 
   for (const file of files) {
     const match = /^(.+)-v(\d+)$/.exec(basename(file, '.md'));
@@ -40,12 +48,12 @@ export function loadPrompts(promptsDir: string): Map<string, LoadedPrompt> {
   }
 
   // Validate required prompts exist
-  const missing = REQUIRED_PROMPTS.filter(p => !prompts.has(p));
+  const missing = REQUIRED_PROMPTS.filter((p) => !prompts.has(p));
   if (missing.length > 0) {
-    const missingFiles = missing.map(m => m + '-v*.md').join(', ');
+    const missingFiles = missing.map((m) => m + '-v*.md').join(', ');
     throw new Error(
       `Missing required prompt files: ${missingFiles}. ` +
-      `Check the prompts directory: ${promptsDir}`
+        `Check the prompts directory: ${promptsDir}`,
     );
   }
 
