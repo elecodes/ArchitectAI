@@ -27,10 +27,10 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-lg font-mono font-semibold text-slate-900">
+          <h1 className="text-2xl font-mono font-semibold text-slate-900">
             architect<span className="text-blue-600">ai</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-1">AI Software Architecture Platform</p>
+          <p className="text-sm text-slate-500 mt-1">AI Software Architecture Platform</p>
         </div>
         <form
           onSubmit={handleSubmit}
@@ -72,7 +72,7 @@ export default function Login() {
             {loading ? 'Authenticating...' : 'Sign in'}
           </button>
         </form>
-        <p className="text-[10px] text-slate-400 text-center mt-4">
+        <p className="text-xs text-slate-400 text-center mt-4">
           Default credentials: admin / architect
         </p>
       </div>

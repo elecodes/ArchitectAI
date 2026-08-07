@@ -24,7 +24,7 @@ function FeedbackWidget({ artifactId }: { artifactId: string }) {
     await api.submitFeedback(artifactId, rating).catch(() => {});
     setSubmitted(true);
   }
-  if (submitted) return <span className="text-[10px] text-slate-400">✓ Recorded</span>;
+  if (submitted) return <span className="text-xs text-slate-400">✓ Recorded</span>;
   return (
     <span className="inline-flex gap-1">
       <button
@@ -192,9 +192,9 @@ export default function Generate() {
           {c.functionalRequirements?.map((r: any) => (
             <div key={r.id} className="border-l-2 border-blue-200 pl-3">
               <div className="flex items-center gap-2">
-                <code className="text-[10px] text-blue-600">{r.id}</code>
+                <code className="text-xs text-blue-600">{r.id}</code>
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${r.priority === 'must' ? 'bg-red-50 text-red-700' : r.priority === 'should' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}
+                  className={`text-xs px-1.5 py-0.5 rounded font-medium ${r.priority === 'must' ? 'bg-red-50 text-red-700' : r.priority === 'should' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}
                 >
                   {r.priority}
                 </span>
@@ -204,7 +204,7 @@ export default function Generate() {
           ))}
           {c.acceptanceCriteria?.length > 0 && (
             <div className="pt-3 border-t border-slate-100">
-              <h4 className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">
+              <h4 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">
                 Acceptance Criteria
               </h4>
               {c.acceptanceCriteria.map((a: string, i: number) => (
@@ -216,7 +216,7 @@ export default function Generate() {
           )}
           {c.constraints?.length > 0 && (
             <div className="pt-3 border-t border-slate-100">
-              <h4 className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">
+              <h4 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">
                 Constraints
               </h4>
               {c.constraints.map((x: string, i: number) => (
@@ -236,7 +236,7 @@ export default function Generate() {
             <div key={i} className="p-3 bg-slate-50 rounded border border-slate-100">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-medium text-slate-800">{comp.name}</span>
-                <code className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">
+                <code className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">
                   {comp.layer}
                 </code>
               </div>
@@ -247,7 +247,7 @@ export default function Generate() {
           ))}
           {c.boundedContexts?.length > 0 && (
             <div className="pt-3 border-t border-slate-100">
-              <h4 className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">
+              <h4 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">
                 Bounded Contexts
               </h4>
               {c.boundedContexts.map((bc: any, i: number) => (
@@ -263,7 +263,7 @@ export default function Generate() {
     if (activeTab === 'tasks')
       return (
         <div className="space-y-2">
-          <div className="text-[10px] text-slate-400 mb-3 font-mono">
+          <div className="text-xs text-slate-400 mb-3 font-mono">
             {c.tasks?.length} tasks • {c.traceabilityCoverage}% coverage
           </div>
           {c.tasks?.map((t: any) => (
@@ -271,12 +271,12 @@ export default function Generate() {
               key={t.id}
               className="flex items-start gap-3 py-2 border-b border-slate-50 last:border-0"
             >
-              <code className="text-[10px] text-blue-600 mt-0.5 whitespace-nowrap">{t.id}</code>
+              <code className="text-xs text-blue-600 mt-0.5 whitespace-nowrap">{t.id}</code>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-slate-700">{t.title}</p>
                 <p className="text-xs text-slate-400 mt-0.5 truncate">{t.description}</p>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded whitespace-nowrap">
+              <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded whitespace-nowrap">
                 {t.complexity}/5
               </span>
             </div>
@@ -301,7 +301,7 @@ export default function Generate() {
         {pipelineStatus === 'complete' && (
           <button
             onClick={handleExport}
-            className="px-3 py-1.5 text-xs font-medium bg-slate-900 text-white rounded hover:bg-slate-800"
+            className="px-3 py-1.5 text-sm font-medium bg-slate-900 text-white rounded hover:bg-slate-800"
           >
             Export .zip
           </button>
@@ -351,7 +351,7 @@ export default function Generate() {
         {pipelineStatus === 'idle' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+              <label className="block text-sm font-medium text-slate-600 mb-1.5">
                 Project description
               </label>
               <textarea
@@ -361,14 +361,14 @@ export default function Generate() {
                 rows={10}
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-mono"
               />
-              <p className="text-[10px] text-slate-400 mt-1 font-mono">
+              <p className="text-xs text-slate-400 mt-1 font-mono">
                 {description.length} chars
               </p>
             </div>
             <button
               onClick={runPipeline}
               disabled={description.length < 10}
-              className="px-4 py-2 text-xs font-medium bg-slate-900 text-white rounded hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Run pipeline
             </button>
@@ -408,7 +408,7 @@ export default function Generate() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                  className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab
                       ? 'border-slate-900 text-slate-900'
                       : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -432,7 +432,7 @@ export default function Generate() {
 
             {/* Metadata footer */}
             {metadata && (
-              <div className="flex items-center gap-4 text-[10px] text-slate-400 font-mono">
+              <div className="flex items-center gap-4 text-xs text-slate-400 font-mono">
                 <span>model: {metadata.model}</span>
                 <span>prompt: {metadata.promptVersion}</span>
                 <span>chunks: {metadata.ragChunksUsed}</span>

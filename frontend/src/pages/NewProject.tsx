@@ -36,7 +36,7 @@ export default function NewProject() {
       <main className="max-w-xl mx-auto px-6 py-8">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Project name</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">Project name</label>
             <input
               type="text"
               value={name}
@@ -49,7 +49,7 @@ export default function NewProject() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">
               Description
               <span className="text-slate-400 font-normal ml-1">
                 — describe what you want to build
@@ -64,10 +64,10 @@ export default function NewProject() {
               required
             />
             <div className="flex justify-between mt-1.5">
-              <p className="text-[10px] text-slate-400">
+              <p className="text-xs text-slate-400">
                 Minimum 10 characters. Be as detailed as possible.
               </p>
-              <p className="text-[10px] text-slate-400 font-mono">{description.length}</p>
+              <p className="text-xs text-slate-400 font-mono">{description.length}</p>
             </div>
           </div>
 
@@ -81,7 +81,7 @@ export default function NewProject() {
             <button
               type="submit"
               disabled={loading || !name || description.length < 10}
-              className="px-4 py-2 text-xs font-medium bg-slate-900 text-white rounded hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Creating...' : 'Create project'}
             </button>
