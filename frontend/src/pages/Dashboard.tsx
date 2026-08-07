@@ -40,7 +40,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center">
-        <h1 className="text-lg font-mono font-semibold text-slate-900">
+        <h1 style={{ fontSize: '24px' }} className="font-mono font-semibold text-slate-900">
           architect<span className="text-blue-600">ai</span>
         </h1>
         <button onClick={logout} className="text-sm text-slate-400 hover:text-slate-600">
