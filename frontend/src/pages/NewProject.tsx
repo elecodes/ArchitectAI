@@ -88,7 +88,7 @@ export default function NewProject() {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="px-4 py-2 text-xs text-slate-500 hover:text-slate-700"
+              className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700"
             >
               Cancel
             </button>

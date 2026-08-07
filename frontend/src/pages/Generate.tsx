@@ -199,7 +199,7 @@ export default function Generate() {
                   {r.priority}
                 </span>
               </div>
-              <p className="text-sm text-slate-700 mt-0.5">{r.description}</p>
+              <p className="text-base text-slate-700 mt-0.5">{r.description}</p>
             </div>
           ))}
           {c.acceptanceCriteria?.length > 0 && (
@@ -208,7 +208,7 @@ export default function Generate() {
                 Acceptance Criteria
               </h4>
               {c.acceptanceCriteria.map((a: string, i: number) => (
-                <p key={i} className="text-xs text-slate-600 py-1 font-mono">
+                <p key={i} className="text-sm text-slate-600 py-1 font-mono">
                   {a}
                 </p>
               ))}
@@ -220,7 +220,7 @@ export default function Generate() {
                 Constraints
               </h4>
               {c.constraints.map((x: string, i: number) => (
-                <p key={i} className="text-xs text-slate-600 py-0.5">
+                <p key={i} className="text-sm text-slate-600 py-0.5">
                   • {x}
                 </p>
               ))}
@@ -235,12 +235,12 @@ export default function Generate() {
           {c.components?.map((comp: any, i: number) => (
             <div key={i} className="p-3 bg-slate-50 rounded border border-slate-100">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-medium text-slate-800">{comp.name}</span>
+                <span className="text-base font-medium text-slate-800">{comp.name}</span>
                 <code className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">
                   {comp.layer}
                 </code>
               </div>
-              <ul className="text-xs text-slate-500 space-y-0.5">
+              <ul className="text-sm text-slate-500 space-y-0.5">
                 {comp.responsibilities?.map((r: string, j: number) => <li key={j}>→ {r}</li>)}
               </ul>
             </div>
@@ -251,7 +251,7 @@ export default function Generate() {
                 Bounded Contexts
               </h4>
               {c.boundedContexts.map((bc: any, i: number) => (
-                <div key={i} className="text-xs text-slate-600 py-1">
+                <div key={i} className="text-sm text-slate-600 py-1">
                   <span className="font-medium">{bc.name}</span> — {bc.aggregates?.join(', ')}
                 </div>
               ))}
@@ -273,7 +273,7 @@ export default function Generate() {
             >
               <code className="text-xs text-blue-600 mt-0.5 whitespace-nowrap">{t.id}</code>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-slate-700">{t.title}</p>
+                <p className="text-base text-slate-700">{t.title}</p>
                 <p className="text-xs text-slate-400 mt-0.5 truncate">{t.description}</p>
               </div>
               <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded whitespace-nowrap">
@@ -392,7 +392,7 @@ export default function Generate() {
             <p className="text-xs text-red-600 mt-1">{error}</p>
             <button
               onClick={() => setPipelineStatus('idle')}
-              className="mt-3 text-xs text-slate-600 hover:text-slate-800 underline"
+              className="mt-3 text-sm text-slate-600 hover:text-slate-800 underline"
             >
               Retry
             </button>
