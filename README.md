@@ -150,6 +150,7 @@ src/                    # Backend
 
 frontend/              # React SPA
 ├── src/pages/         # Login, Dashboard, NewProject, Generate
+├── src/components/    # Design system: Wordmark, Kicker, Button, Sheet, TopBar, Field, icons
 └── src/lib/           # API client
 ```
 

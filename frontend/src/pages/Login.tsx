@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../lib/api';
+import Wordmark from '../components/Wordmark';
+import Kicker from '../components/Kicker';
+import Sheet from '../components/Sheet';
+import { Button } from '../components/Button';
+import { TextField } from '../components/Field';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -24,56 +29,51 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="bg-grid flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 style={{ fontSize: '36px' }} className="font-mono font-semibold text-slate-900">
-            architect<span className="text-blue-600">ai</span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">AI Software Architecture Platform</p>
+          <Wordmark size="lg" />
+          <Kicker className="mt-2 block">Software Architecture Studio</Kicker>
         </div>
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white border border-slate-200 rounded-lg p-6 space-y-4 shadow-sm"
-        >
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Username</label>
-            <input
+
+        <Sheet className="p-8">
+          <div className="mb-6 flex items-baseline justify-between">
+            <Kicker>Sign in</Kicker>
+            <span className="font-mono text-[11px] text-faint">SHEET 01</span>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <TextField
+              label="Username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               placeholder="admin"
               required
               autoFocus
+              autoComplete="username"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Password</label>
-            <input
+            <TextField
+              label="Password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               placeholder="••••••••"
               required
+              autoComplete="current-password"
             />
-          </div>
-          {error && (
-            <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-3 py-2">
-              {error}
-            </div>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 text-sm font-medium bg-slate-900 text-white rounded-md hover:bg-slate-800 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Authenticating...' : 'Sign in'}
-          </button>
-        </form>
-        <p className="text-xs text-slate-400 text-center mt-4">
-          Default credentials: admin / architect
+            {error && (
+              <div className="border-l-2 border-l-red-600 bg-red-soft px-3 py-2 text-sm text-red-800">
+                {error}
+              </div>
+            )}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Authenticating…' : 'Sign in'}
+            </Button>
+          </form>
+        </Sheet>
+
+        <p className="mt-4 text-center font-mono text-xs text-faint">
+          default credentials — admin / architect
         </p>
       </div>
     </div>

@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import * as api from '../lib/api';
+import TopBar from '../components/TopBar';
+import Sheet from '../components/Sheet';
+import Kicker from '../components/Kicker';
+import { Button } from '../components/Button';
+import { TextAreaField } from '../components/Field';
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconDownload,
+  IconCheck,
+} from '../components/icons';
 
 type PipelineStatus = 'idle' | 'running' | 'complete' | 'failed';
 type StageStatus = 'pending' | 'running' | 'complete' | 'failed';
@@ -18,29 +29,53 @@ interface Artifacts {
   tasks?: any;
 }
 
+function StageGlyph({ status }: { status: StageStatus }) {
+  if (status === 'complete') return <IconCheck className="h-3.5 w-3.5 text-blueprint" />;
+  if (status === 'running') return <span className="h-2 w-2 animate-pulse rounded-full bg-blueprint" />;
+  if (status === 'failed') return <span className="h-2 w-2 rounded-full bg-red-600" />;
+  return <span className="h-2 w-2 rounded-full border border-hairline-strong" />;
+}
+
 function FeedbackWidget({ artifactId }: { artifactId: string }) {
   const [submitted, setSubmitted] = useState(false);
   async function submit(rating: 'helpful' | 'needs_improvement') {
     await api.submitFeedback(artifactId, rating).catch(() => {});
     setSubmitted(true);
   }
-  if (submitted) return <span className="text-xs text-slate-400">✓ Recorded</span>;
+  if (submitted) return <span className="font-mono text-xs text-faint">✓ recorded</span>;
   return (
-    <span className="inline-flex gap-1">
+    <span className="inline-flex items-center gap-1.5">
       <button
         onClick={() => submit('helpful')}
-        className="text-slate-400 hover:text-green-600 text-xs"
+        className="font-mono text-xs text-faint transition-colors hover:text-blueprint"
         title="Helpful"
       >
-        ↑
+        [helpful]
       </button>
+      <span className="text-hairline-strong">/</span>
       <button
         onClick={() => submit('needs_improvement')}
-        className="text-slate-400 hover:text-orange-600 text-xs"
+        className="font-mono text-xs text-faint transition-colors hover:text-amber"
         title="Needs work"
       >
-        ↓
+        [needs work]
       </button>
+    </span>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: string }) {
+  const styles =
+    priority === 'must'
+      ? 'text-red-700 border-red-300'
+      : priority === 'should'
+        ? 'text-amber border-amber/50'
+        : 'text-ink-soft border-hairline-strong';
+  return (
+    <span
+      className={`border px-1.5 py-px font-mono text-[11px] uppercase tracking-[0.1em] ${styles}`}
+    >
+      {priority}
     </span>
   );
 }
@@ -71,6 +106,8 @@ export default function Generate() {
       });
     }
   }, [projectId]);
+
+  const activeStage = stages.find((s) => s.status === 'running');
 
   function updateStage(key: string, status: StageStatus) {
     setStages((prev) => prev.map((s) => (s.key === key ? { ...s, status } : s)));
@@ -183,45 +220,37 @@ export default function Generate() {
 
   function renderArtifact(artifact: any) {
     if (!artifact)
-      return <div className="text-xs text-slate-400 py-8 text-center">Not generated yet</div>;
+      return <div className="py-10 text-center font-mono text-xs text-faint">not generated yet</div>;
     const c = artifact.content;
 
     if (activeTab === 'spec')
       return (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {c.functionalRequirements?.map((r: any) => (
-            <div key={r.id} className="border-l-2 border-blue-200 pl-3">
+            <div key={r.id} className="border-l-2 border-blueprint-soft pl-4">
               <div className="flex items-center gap-2">
-                <code className="text-xs text-blue-600">{r.id}</code>
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded font-medium ${r.priority === 'must' ? 'bg-red-50 text-red-700' : r.priority === 'should' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}
-                >
-                  {r.priority}
-                </span>
+                <code className="font-mono text-xs text-blueprint">{r.id}</code>
+                <PriorityBadge priority={r.priority} />
               </div>
-              <p className="text-base text-slate-700 mt-0.5">{r.description}</p>
+              <p className="mt-1 text-base text-ink">{r.description}</p>
             </div>
           ))}
           {c.acceptanceCriteria?.length > 0 && (
-            <div className="pt-3 border-t border-slate-100">
-              <h4 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">
-                Acceptance Criteria
-              </h4>
+            <div className="border-t border-hairline pt-4">
+              <Kicker className="mb-3 block">Acceptance Criteria</Kicker>
               {c.acceptanceCriteria.map((a: string, i: number) => (
-                <p key={i} className="text-sm text-slate-600 py-1 font-mono">
-                  {a}
+                <p key={i} className="py-0.5 font-mono text-sm text-ink-soft">
+                  ▪ {a}
                 </p>
               ))}
             </div>
           )}
           {c.constraints?.length > 0 && (
-            <div className="pt-3 border-t border-slate-100">
-              <h4 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">
-                Constraints
-              </h4>
+            <div className="border-t border-hairline pt-4">
+              <Kicker className="mb-3 block">Constraints</Kicker>
               {c.constraints.map((x: string, i: number) => (
-                <p key={i} className="text-sm text-slate-600 py-0.5">
-                  • {x}
+                <p key={i} className="py-0.5 text-sm text-ink-soft">
+                  — {x}
                 </p>
               ))}
             </div>
@@ -233,26 +262,31 @@ export default function Generate() {
       return (
         <div className="space-y-3">
           {c.components?.map((comp: any, i: number) => (
-            <div key={i} className="p-3 bg-slate-50 rounded border border-slate-100">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-base font-medium text-slate-800">{comp.name}</span>
-                <code className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">
+            <div key={i} className="border border-hairline bg-paper/50 px-4 py-3">
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="text-base font-semibold text-ink">{comp.name}</span>
+                <code className="border border-blueprint-soft bg-blueprint-soft/50 px-1.5 py-px font-mono text-[11px] uppercase tracking-[0.1em] text-blueprint">
                   {comp.layer}
                 </code>
               </div>
-              <ul className="text-sm text-slate-500 space-y-0.5">
-                {comp.responsibilities?.map((r: string, j: number) => <li key={j}>→ {r}</li>)}
+              <ul className="space-y-0.5 text-sm text-ink-soft">
+                {comp.responsibilities?.map((r: string, j: number) => (
+                  <li key={j} className="flex gap-2">
+                    <span className="font-mono text-xs text-faint">→</span>
+                    {r}
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
           {c.boundedContexts?.length > 0 && (
-            <div className="pt-3 border-t border-slate-100">
-              <h4 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">
-                Bounded Contexts
-              </h4>
+            <div className="border-t border-hairline pt-4">
+              <Kicker className="mb-3 block">Bounded Contexts</Kicker>
               {c.boundedContexts.map((bc: any, i: number) => (
-                <div key={i} className="text-sm text-slate-600 py-1">
-                  <span className="font-medium">{bc.name}</span> — {bc.aggregates?.join(', ')}
+                <div key={i} className="py-1 text-sm text-ink-soft">
+                  <span className="font-medium text-ink">{bc.name}</span>
+                  <span className="text-faint"> — </span>
+                  {bc.aggregates?.join(', ')}
                 </div>
               ))}
             </div>
@@ -262,21 +296,25 @@ export default function Generate() {
 
     if (activeTab === 'tasks')
       return (
-        <div className="space-y-2">
-          <div className="text-xs text-slate-400 mb-3 font-mono">
-            {c.tasks?.length} tasks • {c.traceabilityCoverage}% coverage
+        <div className="space-y-1">
+          <div className="mb-3 flex items-center gap-3 font-mono text-xs text-faint">
+            <span>{c.tasks?.length} tasks</span>
+            <span className="h-1 w-1 rounded-full bg-hairline-strong" />
+            <span>{c.traceabilityCoverage}% coverage</span>
           </div>
           {c.tasks?.map((t: any) => (
             <div
               key={t.id}
-              className="flex items-start gap-3 py-2 border-b border-slate-50 last:border-0"
+              className="flex items-start gap-3 border-b border-hairline py-3 last:border-0"
             >
-              <code className="text-xs text-blue-600 mt-0.5 whitespace-nowrap">{t.id}</code>
-              <div className="flex-1 min-w-0">
-                <p className="text-base text-slate-700">{t.title}</p>
-                <p className="text-xs text-slate-400 mt-0.5 truncate">{t.description}</p>
+              <code className="mt-px whitespace-nowrap font-mono text-xs text-blueprint">
+                {t.id}
+              </code>
+              <div className="min-w-0 flex-1">
+                <p className="text-base text-ink">{t.title}</p>
+                <p className="mt-0.5 truncate text-sm text-faint">{t.description}</p>
               </div>
-              <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded whitespace-nowrap">
+              <span className="whitespace-nowrap border border-hairline-strong px-1.5 py-px font-mono text-[11px] text-ink-soft">
                 {t.complexity}/5
               </span>
             </div>
@@ -288,155 +326,138 @@ export default function Generate() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-xs text-slate-400 hover:text-slate-600">
-            ← Projects
-          </Link>
-          <span className="text-xs text-slate-300">/</span>
-          <span className="text-sm font-medium text-slate-700">{project?.name || '...'}</span>
-        </div>
-        {pipelineStatus === 'complete' && (
-          <button
-            onClick={handleExport}
-            className="px-3 py-1.5 text-sm font-medium bg-slate-900 text-white rounded hover:bg-slate-800"
-          >
-            Export .zip
-          </button>
-        )}
-      </header>
+    <div className="bg-grid min-h-screen">
+      <TopBar
+        left={
+          <>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 font-mono text-sm text-faint transition-colors hover:text-ink"
+            >
+              <IconArrowLeft className="h-3.5 w-3.5" /> projects
+            </Link>
+            <span className="font-mono text-[11px] text-hairline-strong">//</span>
+            <span className="truncate text-base font-medium text-ink">
+              {project?.name || '…'}
+            </span>
+          </>
+        }
+        right={
+          pipelineStatus === 'complete' && (
+            <Button size="sm" onClick={handleExport}>
+              <IconDownload className="h-3.5 w-3.5" /> Export .zip
+            </Button>
+          )
+        }
+      />
 
-      {/* Pipeline status bar */}
       {pipelineStatus !== 'idle' && (
-        <div className="bg-white border-b border-slate-200 px-6 py-2">
-          <div className="flex items-center gap-6">
+        <div className="border-b border-hairline bg-paper">
+          <div className="mx-auto flex max-w-4xl items-center px-6 py-3">
             {stages.map((stage, i) => (
-              <div key={stage.key} className="flex items-center gap-2">
-                {i > 0 && <span className="text-slate-200 text-xs">→</span>}
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    stage.status === 'complete'
-                      ? 'bg-green-500'
-                      : stage.status === 'running'
-                        ? 'bg-blue-500 animate-pulse'
-                        : stage.status === 'failed'
-                          ? 'bg-red-500'
-                          : 'bg-slate-200'
-                  }`}
-                />
-                <span
-                  className={`text-xs ${
-                    stage.status === 'complete'
-                      ? 'text-slate-700'
-                      : stage.status === 'running'
-                        ? 'text-blue-600 font-medium'
-                        : stage.status === 'failed'
-                          ? 'text-red-600'
-                          : 'text-slate-400'
-                  }`}
-                >
-                  {stage.label}
-                </span>
+              <div key={stage.key} className="flex items-center">
+                <div className="flex items-center gap-2.5">
+                  <span className="font-mono text-[11px] text-faint">0{i + 1}</span>
+                  <StageGlyph status={stage.status} />
+                  <span
+                    className={`font-mono text-[13px] tracking-[0.05em] ${
+                      stage.status === 'running'
+                        ? 'text-blueprint'
+                        : stage.status === 'complete'
+                          ? 'text-ink'
+                          : stage.status === 'failed'
+                            ? 'text-red-600'
+                            : 'text-faint'
+                    }`}
+                  >
+                    {stage.label}
+                  </span>
+                </div>
+                {i < stages.length - 1 && <span className="mx-4 h-px w-8 bg-hairline-strong" />}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Main content */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-6 py-6">
-        {/* Idle: input form */}
+      <main className="mx-auto max-w-4xl px-6 py-8">
         {pipelineStatus === 'idle' && (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1.5">
-                Project description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the system you want to architect..."
-                rows={10}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-mono"
-              />
-              <p className="text-xs text-slate-400 mt-1 font-mono">
-                {description.length} chars
-              </p>
+            <div className="flex items-baseline justify-between">
+              <Kicker>Project brief</Kicker>
+              <span className="font-mono text-[11px] text-faint">SHEET 03 — INPUT</span>
             </div>
-            <button
-              onClick={runPipeline}
-              disabled={description.length < 10}
-              className="px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Run pipeline
-            </button>
+            <TextAreaField
+              label="Describe the system"
+              hint={`${description.length} chars`}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe the system you want to architect…"
+              rows={10}
+            />
+            <Button onClick={runPipeline} disabled={description.length < 10}>
+              Run pipeline <IconArrowRight className="h-3.5 w-3.5" />
+            </Button>
           </div>
         )}
 
-        {/* Running: just the pipeline bar above handles visualization */}
         {pipelineStatus === 'running' && (
-          <div className="py-12 text-center">
-            <p className="text-sm text-slate-500">Generating engineering artifacts...</p>
-            <p className="text-xs text-slate-400 mt-1">
-              This typically takes 15–60 seconds per stage.
+          <div className="py-10">
+            <div className="mb-3 flex items-center justify-between font-mono text-xs text-faint">
+              <span>{activeStage?.label || 'Pipeline'}</span>
+              <span>generating…</span>
+            </div>
+            <div className="h-px w-full overflow-hidden bg-hairline">
+              <div className="h-full w-1/3 animate-pulse bg-blueprint" />
+            </div>
+            <p className="mt-3 font-mono text-xs text-faint">
+              typically 15–60 seconds per stage
             </p>
           </div>
         )}
 
-        {/* Failed */}
         {pipelineStatus === 'failed' && (
-          <div className="border border-red-100 bg-red-50 rounded-lg p-4">
-            <p className="text-sm text-red-700 font-medium">Pipeline failed</p>
-            <p className="text-xs text-red-600 mt-1">{error}</p>
-            <button
-              onClick={() => setPipelineStatus('idle')}
-              className="mt-3 text-sm text-slate-600 hover:text-slate-800 underline"
-            >
+          <div className="border border-hairline border-l-2 border-l-red-600 bg-white p-5">
+            <Kicker className="mb-2 block text-red-700">Pipeline failed</Kicker>
+            <p className="font-mono text-sm text-red-800">{error}</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => setPipelineStatus('idle')}>
               Retry
-            </button>
+            </Button>
           </div>
         )}
 
-        {/* Complete: document viewer */}
         {pipelineStatus === 'complete' && (
           <div className="space-y-4">
-            {/* Tab bar */}
-            <div className="flex items-center gap-1 border-b border-slate-200">
-              {(['spec', 'architecture', 'tasks'] as const).map((tab) => (
+            <div className="flex items-center gap-1 border-b border-hairline">
+              {(['spec', 'architecture', 'tasks'] as const).map((tab, i) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  className={`-mb-px flex items-center gap-2 border-b px-3 py-2.5 font-mono text-[13px] tracking-[0.05em] transition-colors ${
                     activeTab === tab
-                      ? 'border-slate-900 text-slate-900'
-                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                      ? 'border-ink text-ink'
+                      : 'border-transparent text-faint hover:text-ink-soft'
                   }`}
                 >
-                  {tab === 'spec'
-                    ? 'Requirements'
-                    : tab === 'architecture'
-                      ? 'Architecture'
-                      : 'Tasks'}
+                  <span className="text-[11px] text-faint">0{i + 1}</span>
+                  {tab === 'spec' ? 'Requirements' : tab === 'architecture' ? 'Architecture' : 'Tasks'}
                 </button>
               ))}
               <div className="flex-1" />
               {artifacts[activeTab] && <FeedbackWidget artifactId={artifacts[activeTab].id} />}
             </div>
 
-            {/* Document content */}
-            <div className="bg-white border border-slate-200 rounded-lg p-5">
-              {renderArtifact(artifacts[activeTab])}
-            </div>
+            <Sheet className="px-6 py-5">{renderArtifact(artifacts[activeTab])}</Sheet>
 
-            {/* Metadata footer */}
             {metadata && (
-              <div className="flex items-center gap-4 text-xs text-slate-400 font-mono">
-                <span>model: {metadata.model}</span>
-                <span>prompt: {metadata.promptVersion}</span>
-                <span>chunks: {metadata.ragChunksUsed}</span>
-                <span>retries: {metadata.retryCount}</span>
+              <div className="flex items-center gap-3 font-mono text-xs text-faint">
+                <span>model {metadata.model}</span>
+                <span className="text-hairline-strong">/</span>
+                <span>prompt {metadata.promptVersion}</span>
+                <span className="text-hairline-strong">/</span>
+                <span>chunks {metadata.ragChunksUsed}</span>
+                <span className="text-hairline-strong">/</span>
+                <span>retries {metadata.retryCount}</span>
               </div>
             )}
           </div>

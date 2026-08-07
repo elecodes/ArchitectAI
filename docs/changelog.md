@@ -4,6 +4,10 @@ A chronological log of significant engineering decisions and changes made during
 
 ---
 
+## 2026-08-07
+
+- Redesigned the UI with a "Technical Blueprint" aesthetic (branch `ui/polish`): paper grid background, hairline sheets with registration marks, Instrument Sans + IBM Plex Mono, single blueprint-blue accent. Introduced a shared design system in `frontend/src/components/` (Wordmark, Kicker, Button, Sheet, TopBar, Field, icons). Explicitly avoids common AI-UI clichés (gradients, glassmorphism, glow).
+
 ## 2026-08-04
 
 - Adopted modular monolith architecture over microservices. (ADR-0001)
