@@ -10,17 +10,21 @@
   --color-faint: #8c8578;
   --color-hairline: #e6e3dd;
   --color-hairline-strong: #d6d2ca;
-  --color-blueprint: #0e4b8a;
-  --color-blueprint-soft: #e2ebf5;
+  --color-accent: #ad5526;
+  --color-accent-soft: #f8e6d6;
   --color-amber: #b45309;
   --color-red-soft: #fbeae7;
 }
 
 @utility bg-grid {
   background-image:
-    linear-gradient(to right, rgba(28, 27, 24, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(28, 27, 24, 0.035) 1px, transparent 1px);
-  background-size: 24px 24px;
+    radial-gradient(ellipse 75% 55% at 50% 0%, rgba(173, 85, 38, 0.045), transparent 60%),
+    linear-gradient(to right, rgba(150, 96, 58, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(150, 96, 58, 0.04) 1px, transparent 1px);
+  background-size:
+    auto,
+    24px 24px,
+    24px 24px;
 }
 
 html {
@@ -35,7 +39,7 @@ body {
 }
 
 ::selection {
-  background-color: var(--color-blueprint);
+  background-color: var(--color-accent);
   color: #fff;
 }
 
@@ -59,7 +63,7 @@ body {
 
   .sheet-input:focus {
     outline: none;
-    border-color: var(--color-blueprint);
-    box-shadow: 0 0 0 1px var(--color-blueprint);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
   }
 }

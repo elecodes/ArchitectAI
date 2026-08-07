@@ -30,8 +30,8 @@ interface Artifacts {
 }
 
 function StageGlyph({ status }: { status: StageStatus }) {
-  if (status === 'complete') return <IconCheck className="h-3.5 w-3.5 text-blueprint" />;
-  if (status === 'running') return <span className="h-2 w-2 animate-pulse rounded-full bg-blueprint" />;
+  if (status === 'complete') return <IconCheck className="h-3.5 w-3.5 text-accent" />;
+  if (status === 'running') return <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />;
   if (status === 'failed') return <span className="h-2 w-2 rounded-full bg-red-600" />;
   return <span className="h-2 w-2 rounded-full border border-hairline-strong" />;
 }
@@ -47,7 +47,7 @@ function FeedbackWidget({ artifactId }: { artifactId: string }) {
     <span className="inline-flex items-center gap-1.5">
       <button
         onClick={() => submit('helpful')}
-        className="font-mono text-xs text-faint transition-colors hover:text-blueprint"
+        className="font-mono text-xs text-faint transition-colors hover:text-accent"
         title="Helpful"
       >
         [helpful]
@@ -227,9 +227,9 @@ export default function Generate() {
       return (
         <div className="space-y-5">
           {c.functionalRequirements?.map((r: any) => (
-            <div key={r.id} className="border-l-2 border-blueprint-soft pl-4">
+            <div key={r.id} className="border-l-2 border-accent-soft pl-4">
               <div className="flex items-center gap-2">
-                <code className="font-mono text-xs text-blueprint">{r.id}</code>
+                <code className="font-mono text-xs text-accent">{r.id}</code>
                 <PriorityBadge priority={r.priority} />
               </div>
               <p className="mt-1 text-base text-ink">{r.description}</p>
@@ -265,7 +265,7 @@ export default function Generate() {
             <div key={i} className="border border-hairline bg-paper/50 px-4 py-3">
               <div className="mb-1.5 flex items-center gap-2">
                 <span className="text-base font-semibold text-ink">{comp.name}</span>
-                <code className="border border-blueprint-soft bg-blueprint-soft/50 px-1.5 py-px font-mono text-[11px] uppercase tracking-[0.1em] text-blueprint">
+                <code className="border border-accent-soft bg-accent-soft/50 px-1.5 py-px font-mono text-[11px] uppercase tracking-[0.1em] text-accent">
                   {comp.layer}
                 </code>
               </div>
@@ -307,7 +307,7 @@ export default function Generate() {
               key={t.id}
               className="flex items-start gap-3 border-b border-hairline py-3 last:border-0"
             >
-              <code className="mt-px whitespace-nowrap font-mono text-xs text-blueprint">
+              <code className="mt-px whitespace-nowrap font-mono text-xs text-accent">
                 {t.id}
               </code>
               <div className="min-w-0 flex-1">
@@ -362,7 +362,7 @@ export default function Generate() {
                   <span
                     className={`font-mono text-[13px] tracking-[0.05em] ${
                       stage.status === 'running'
-                        ? 'text-blueprint'
+                        ? 'text-accent'
                         : stage.status === 'complete'
                           ? 'text-ink'
                           : stage.status === 'failed'
@@ -408,7 +408,7 @@ export default function Generate() {
               <span>generating…</span>
             </div>
             <div className="h-px w-full overflow-hidden bg-hairline">
-              <div className="h-full w-1/3 animate-pulse bg-blueprint" />
+              <div className="h-full w-1/3 animate-pulse bg-accent" />
             </div>
             <p className="mt-3 font-mono text-xs text-faint">
               typically 15–60 seconds per stage
