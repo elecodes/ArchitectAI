@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { createProject } from '../lib/api';
 
 export default function NewProject() {
@@ -24,50 +24,73 @@ export default function NewProject() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4">
-        <h1 className="text-xl font-bold">New Project</h1>
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-4">
+        <Link to="/" className="text-xs text-slate-400 hover:text-slate-600">
+          ← Projects
+        </Link>
+        <span className="text-xs text-slate-300">/</span>
+        <span className="text-sm font-medium text-slate-700">New project</span>
       </header>
-      <main className="max-w-2xl mx-auto p-6">
-        <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg border">
+
+      <main className="max-w-xl mx-auto px-6 py-8">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-1">Project Name</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">Project name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., E-commerce Platform"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               required
+              autoFocus
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium mb-1">Description / Idea</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">
+              Description
+              <span className="text-slate-400 font-normal ml-1">
+                — describe what you want to build
+              </span>
+            </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what you want to build..."
-              rows={6}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="A marketplace platform that connects buyers and sellers with real-time messaging, payment processing, and review system..."
+              rows={8}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
               required
             />
-            <p className="text-xs text-gray-400 mt-1">{description.length} / 50,000 characters</p>
+            <div className="flex justify-between mt-1.5">
+              <p className="text-[10px] text-slate-400">
+                Minimum 10 characters. Be as detailed as possible.
+              </p>
+              <p className="text-[10px] text-slate-400 font-mono">{description.length}</p>
+            </div>
           </div>
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
+
+          {error && (
+            <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-3 py-2">
+              {error}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 pt-2">
             <button
               type="submit"
               disabled={loading || !name || description.length < 10}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 text-xs font-medium bg-slate-900 text-white rounded hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Creating...' : 'Create & Generate'}
+              {loading ? 'Creating...' : 'Create project'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="px-4 py-2 text-xs text-slate-500 hover:text-slate-700"
+            >
+              Cancel
             </button>
           </div>
         </form>

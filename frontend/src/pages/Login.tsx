@@ -17,43 +17,64 @@ export default function Login() {
       await login(username, password);
       navigate('/');
     } catch (err) {
-      setError((err as Error).message || 'Login failed');
+      setError((err as Error).message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm p-8 bg-white rounded-lg shadow">
-        <h1 className="text-2xl font-bold text-center mb-6">ArchitectAI</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <h1 className="text-lg font-mono font-semibold text-slate-900">
+            architect<span className="text-blue-600">ai</span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">AI Software Architecture Platform</p>
+        </div>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white border border-slate-200 rounded-lg p-6 space-y-4 shadow-sm"
+        >
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="admin"
+              required
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          {error && (
+            <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-3 py-2">
+              {error}
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="w-full py-2 text-sm font-medium bg-slate-900 text-white rounded-md hover:bg-slate-800 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Authenticating...' : 'Sign in'}
           </button>
         </form>
-        <p className="text-xs text-gray-400 text-center mt-4">Default: admin / architect</p>
+        <p className="text-[10px] text-slate-400 text-center mt-4">
+          Default credentials: admin / architect
+        </p>
       </div>
     </div>
   );

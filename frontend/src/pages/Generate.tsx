@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import * as api from '../lib/api';
 
-type Step = 'idle' | 'spec' | 'architecture' | 'tasks' | 'done' | 'error';
+type PipelineStatus = 'idle' | 'running' | 'complete' | 'failed';
+type StageStatus = 'pending' | 'running' | 'complete' | 'failed';
+
+interface Stage {
+  key: string;
+  label: string;
+  status: StageStatus;
+  artifactId?: string;
+}
 
 interface Artifacts {
   spec?: any;
@@ -11,39 +19,29 @@ interface Artifacts {
 }
 
 function FeedbackWidget({ artifactId }: { artifactId: string }) {
-  const [submitted, setSubmitted] = useState<string | null>(null);
-
-  async function handleFeedback(rating: 'helpful' | 'needs_improvement') {
-    try {
-      await api.submitFeedback(artifactId, rating);
-      setSubmitted(rating);
-    } catch (err) {
-      console.error(err);
-    }
+  const [submitted, setSubmitted] = useState(false);
+  async function submit(rating: 'helpful' | 'needs_improvement') {
+    await api.submitFeedback(artifactId, rating).catch(() => {});
+    setSubmitted(true);
   }
-
-  if (submitted) {
-    return <p className="text-xs text-gray-400 mt-4">Thanks for your feedback!</p>;
-  }
-
+  if (submitted) return <span className="text-[10px] text-slate-400">✓ Recorded</span>;
   return (
-    <div className="mt-4 pt-4 border-t flex items-center gap-3">
-      <span className="text-xs text-gray-500">Was this helpful?</span>
+    <span className="inline-flex gap-1">
       <button
-        onClick={() => handleFeedback('helpful')}
-        className="text-lg hover:scale-110 transition"
+        onClick={() => submit('helpful')}
+        className="text-slate-400 hover:text-green-600 text-xs"
         title="Helpful"
       >
-        👍
+        ↑
       </button>
       <button
-        onClick={() => handleFeedback('needs_improvement')}
-        className="text-lg hover:scale-110 transition"
-        title="Needs improvement"
+        onClick={() => submit('needs_improvement')}
+        className="text-slate-400 hover:text-orange-600 text-xs"
+        title="Needs work"
       >
-        👎
+        ↓
       </button>
-    </div>
+    </span>
   );
 }
 
@@ -51,10 +49,16 @@ export default function Generate() {
   const { id: projectId } = useParams<{ id: string }>();
   const [project, setProject] = useState<any>(null);
   const [description, setDescription] = useState('');
-  const [step, setStep] = useState<Step>('idle');
+  const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus>('idle');
   const [error, setError] = useState('');
+  const [stages, setStages] = useState<Stage[]>([
+    { key: 'spec', label: 'Requirements', status: 'pending' },
+    { key: 'architecture', label: 'Architecture', status: 'pending' },
+    { key: 'tasks', label: 'Tasks', status: 'pending' },
+  ]);
   const [artifacts, setArtifacts] = useState<Artifacts>({});
   const [activeTab, setActiveTab] = useState<'spec' | 'architecture' | 'tasks'>('spec');
+  const [metadata, setMetadata] = useState<any>(null);
 
   useEffect(() => {
     if (projectId) {
@@ -68,390 +72,346 @@ export default function Generate() {
     }
   }, [projectId]);
 
-  async function handleGenerate() {
+  function updateStage(key: string, status: StageStatus) {
+    setStages((prev) => prev.map((s) => (s.key === key ? { ...s, status } : s)));
+  }
+
+  async function runPipeline() {
     if (!projectId || description.length < 10) return;
+    setPipelineStatus('running');
     setError('');
     setArtifacts({});
+    setStages([
+      { key: 'spec', label: 'Requirements', status: 'pending' },
+      { key: 'architecture', label: 'Architecture', status: 'pending' },
+      { key: 'tasks', label: 'Tasks', status: 'pending' },
+    ]);
 
     try {
-      // Step 1: Generate Specification
-      setStep('spec');
+      updateStage('spec', 'running');
       const specResult = await api.generateSpec(projectId, description);
       setArtifacts((prev) => ({ ...prev, spec: specResult.artifact }));
+      setMetadata(specResult.provenance);
+      updateStage('spec', 'complete');
 
-      // Step 2: Generate Architecture
-      setStep('architecture');
+      updateStage('architecture', 'running');
       const archResult = await api.generateArchitecture(specResult.artifact.id);
       setArtifacts((prev) => ({ ...prev, architecture: archResult.artifact }));
+      updateStage('architecture', 'complete');
 
-      // Step 3: Generate Tasks
-      setStep('tasks');
+      updateStage('tasks', 'running');
       const taskResult = await api.generateTasks(archResult.artifact.id);
       setArtifacts((prev) => ({ ...prev, tasks: taskResult.artifact }));
+      updateStage('tasks', 'complete');
 
-      setStep('done');
+      setPipelineStatus('complete');
     } catch (err) {
       setError((err as Error).message);
-      setStep('error');
-    }
-  }
-
-  function renderProgress() {
-    const steps = [
-      { key: 'spec', label: 'Specification' },
-      { key: 'architecture', label: 'Architecture' },
-      { key: 'tasks', label: 'Tasks' },
-    ];
-
-    const currentIndex = steps.findIndex((s) => s.key === step);
-    const isDone = step === 'done';
-    const isError = step === 'error';
-
-    return (
-      <div className="space-y-3">
-        {steps.map((s, i) => {
-          let status = '○';
-          let color = 'text-gray-400';
-          if (i < currentIndex || isDone) {
-            status = '✓';
-            color = 'text-green-600';
-          } else if (i === currentIndex && !isDone && !isError) {
-            status = '⏳';
-            color = 'text-blue-600';
-          }
-          const isActive = i === currentIndex && !isDone && !isError;
-          return (
-            <div key={s.key} className={`flex items-center gap-3 ${color}`}>
-              <span className="text-lg w-6">{status}</span>
-              <span className="font-medium">{s.label}</span>
-              {isActive && <span className="text-xs text-gray-400 ml-2">generating...</span>}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  function renderArtifactContent(artifact: any) {
-    if (!artifact) return null;
-    const content = artifact.content;
-
-    if (activeTab === 'spec') {
-      return (
-        <div className="space-y-6">
-          <section>
-            <h3 className="font-semibold text-sm text-gray-700 mb-2">Functional Requirements</h3>
-            {content.functionalRequirements?.map((r: any) => (
-              <div key={r.id} className="p-3 bg-gray-50 rounded mb-2">
-                <div className="flex justify-between">
-                  <span className="font-mono text-xs text-blue-600">{r.id}</span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded ${r.priority === 'must' ? 'bg-red-100 text-red-700' : r.priority === 'should' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}
-                  >
-                    {r.priority}
-                  </span>
-                </div>
-                <p className="text-sm mt-1">{r.description}</p>
-              </div>
-            ))}
-          </section>
-          <section>
-            <h3 className="font-semibold text-sm text-gray-700 mb-2">Acceptance Criteria</h3>
-            <ul className="space-y-1">
-              {content.acceptanceCriteria?.map((c: string, i: number) => (
-                <li key={i} className="text-sm text-gray-600 pl-4 border-l-2 border-blue-200">
-                  {c}
-                </li>
-              ))}
-            </ul>
-          </section>
-          {content.constraints?.length > 0 && (
-            <section>
-              <h3 className="font-semibold text-sm text-gray-700 mb-2">Constraints</h3>
-              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                {content.constraints.map((c: string, i: number) => (
-                  <li key={i}>{c}</li>
-                ))}
-              </ul>
-            </section>
-          )}
-          {content.dependencies?.length > 0 && (
-            <section>
-              <h3 className="font-semibold text-sm text-gray-700 mb-2">Dependencies</h3>
-              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                {content.dependencies.map((d: string, i: number) => (
-                  <li key={i}>{d}</li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
+      setPipelineStatus('failed');
+      setStages((prev) =>
+        prev.map((s) => (s.status === 'running' ? { ...s, status: 'failed' } : s)),
       );
     }
-
-    if (activeTab === 'architecture') {
-      return (
-        <div className="space-y-6">
-          <section>
-            <h3 className="font-semibold text-sm text-gray-700 mb-2">Components</h3>
-            {content.components?.map((c: any, i: number) => (
-              <div key={i} className="p-3 bg-gray-50 rounded mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm">{c.name}</span>
-                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-                    {c.layer}
-                  </span>
-                </div>
-                <ul className="mt-1 text-xs text-gray-500 list-disc list-inside">
-                  {c.responsibilities?.map((r: string, j: number) => <li key={j}>{r}</li>)}
-                </ul>
-              </div>
-            ))}
-          </section>
-          {content.boundedContexts?.length > 0 && (
-            <section>
-              <h3 className="font-semibold text-sm text-gray-700 mb-2">Bounded Contexts</h3>
-              {content.boundedContexts.map((bc: any, i: number) => (
-                <div key={i} className="p-3 bg-gray-50 rounded mb-2">
-                  <span className="font-medium text-sm">{bc.name}</span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Aggregates: {bc.aggregates?.join(', ')}
-                  </p>
-                </div>
-              ))}
-            </section>
-          )}
-        </div>
-      );
-    }
-
-    if (activeTab === 'tasks') {
-      return (
-        <div className="space-y-3">
-          <p className="text-xs text-gray-500 mb-4">
-            Coverage: {content.traceabilityCoverage || 'N/A'}% • {content.tasks?.length || 0} tasks
-          </p>
-          {content.tasks?.map((t: any) => (
-            <div key={t.id} className="p-3 bg-gray-50 rounded">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="font-mono text-xs text-blue-600">{t.id}</span>
-                  <span className="font-medium text-sm ml-2">{t.title}</span>
-                </div>
-                <span className="text-xs px-2 py-0.5 bg-gray-200 rounded">{t.complexity}/5</span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">{t.description}</p>
-              {t.dependsOn?.length > 0 && (
-                <p className="text-xs text-gray-400 mt-1">Depends on: {t.dependsOn.join(', ')}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    return null;
   }
 
   async function handleExport() {
     const { default: JSZip } = await import('jszip');
     const zip = new JSZip();
+    const name = project?.name || 'project';
 
-    const projectName = project?.name || 'project';
-
-    // README
     zip.file(
       'README.md',
-      `# ${projectName} — Engineering Package\n\nGenerated by ArchitectAI.\n\nThis package contains the complete engineering documentation for your project.\n\n## Contents\n\n- 01_Requirements.md — Functional requirements and acceptance criteria\n- 02_Architecture.md — System architecture and component design\n- 03_Tasks.md — Implementation task breakdown\n- 04_Metadata.md — Generation metadata and provenance\n\n## How This Was Generated\n\nThis engineering package was generated using ArchitectAI from the following description:\n\n> ${description}\n`,
+      `# ${name} — Engineering Package\n\nGenerated by ArchitectAI.\n\n> ${description}\n`,
+    );
+    if (artifacts.spec) zip.file('01_Requirements.md', formatSpec(artifacts.spec.content));
+    if (artifacts.architecture)
+      zip.file('02_Architecture.md', formatArch(artifacts.architecture.content));
+    if (artifacts.tasks) zip.file('03_Tasks.md', formatTasks(artifacts.tasks.content));
+    zip.file(
+      '04_Metadata.md',
+      `# Metadata\n\n- **Model:** ${metadata?.model || 'unknown'}\n- **Prompt:** ${metadata?.promptVersion || 'unknown'}\n- **Generated:** ${new Date().toISOString()}\n`,
     );
 
-    // Spec
-    if (artifacts.spec) {
-      const spec = artifacts.spec.content;
-      let md = '# Requirements\n\n';
-      md += '## Functional Requirements\n\n';
-      if (spec.functionalRequirements) {
-        spec.functionalRequirements.forEach((r: any) => {
-          md += `### ${r.id}: ${r.description}\n\n**Priority:** ${r.priority}\n\n`;
-        });
-      }
-      md += '## Acceptance Criteria\n\n';
-      if (spec.acceptanceCriteria) {
-        spec.acceptanceCriteria.forEach((c: string) => {
-          md += `- ${c}\n`;
-        });
-      }
-      md += '\n## Constraints\n\n';
-      if (spec.constraints) {
-        spec.constraints.forEach((c: string) => {
-          md += `- ${c}\n`;
-        });
-      }
-      md += '\n## Dependencies\n\n';
-      if (spec.dependencies) {
-        spec.dependencies.forEach((d: string) => {
-          md += `- ${d}\n`;
-        });
-      }
-      zip.file('01_Requirements.md', md);
-    }
-
-    // Architecture
-    if (artifacts.architecture) {
-      const arch = artifacts.architecture.content;
-      let md = '# Architecture\n\n';
-      md += '## Components\n\n';
-      if (arch.components) {
-        arch.components.forEach((c: any) => {
-          md += `### ${c.name}\n\n**Layer:** ${c.layer}\n\n**Responsibilities:**\n`;
-          c.responsibilities?.forEach((r: string) => {
-            md += `- ${r}\n`;
-          });
-          md += `\n**Dependencies:** ${c.dependencies?.join(', ') || 'None'}\n\n`;
-        });
-      }
-      md += '## Bounded Contexts\n\n';
-      if (arch.boundedContexts) {
-        arch.boundedContexts.forEach((bc: any) => {
-          md += `### ${bc.name}\n\n**Aggregates:** ${bc.aggregates?.join(', ')}\n\n**Responsibilities:**\n`;
-          bc.responsibilities?.forEach((r: string) => {
-            md += `- ${r}\n`;
-          });
-          md += '\n';
-        });
-      }
-      md += '## SOLID Notes\n\n';
-      if (arch.solidNotes) {
-        arch.solidNotes.forEach((n: string) => {
-          md += `- ${n}\n`;
-        });
-      }
-      zip.file('02_Architecture.md', md);
-    }
-
-    // Tasks
-    if (artifacts.tasks) {
-      const taskData = artifacts.tasks.content;
-      let md = '# Implementation Tasks\n\n';
-      md += `**Traceability Coverage:** ${taskData.traceabilityCoverage || 'N/A'}%\n\n`;
-      if (taskData.tasks) {
-        taskData.tasks.forEach((t: any) => {
-          md += `## ${t.id}: ${t.title}\n\n`;
-          md += `**Complexity:** ${t.complexity}/5\n\n`;
-          md += `${t.description}\n\n`;
-          md += '**Acceptance Criteria:**\n\n';
-          t.acceptanceCriteria?.forEach((ac: any) => {
-            md += `- **Action:** ${ac.action}\n  **Expected:** ${ac.expectedResult}\n  **Pass/Fail:** ${ac.passFailCondition}\n\n`;
-          });
-          if (t.dependsOn?.length) {
-            md += `**Depends on:** ${t.dependsOn.join(', ')}\n\n`;
-          }
-          md += '---\n\n';
-        });
-      }
-      zip.file('03_Tasks.md', md);
-    }
-
-    // Metadata
-    let metaMd = '# Generation Metadata\n\n';
-    metaMd += `**Project:** ${projectName}\n\n`;
-    metaMd += `**Generated:** ${new Date().toISOString()}\n\n`;
-    if (artifacts.spec) {
-      metaMd += `**Model:** ${artifacts.spec.model}\n\n`;
-      metaMd += `**Prompt Version:** ${artifacts.spec.promptVersion}\n\n`;
-    }
-    zip.file('04_Metadata.md', metaMd);
-
-    // Download
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${projectName.replace(/\s+/g, '_')}_engineering_package.zip`;
+    a.download = `${name.replace(/\s+/g, '_')}.zip`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-gray-500 hover:text-gray-700">
-            ← Back
-          </Link>
-          <h1 className="text-xl font-bold">{project?.name || 'Project'}</h1>
+  function formatSpec(c: any): string {
+    let md = '# Requirements\n\n';
+    c.functionalRequirements?.forEach((r: any) => {
+      md += `## ${r.id}: ${r.description}\n\n**Priority:** ${r.priority}\n\n`;
+    });
+    md += '## Acceptance Criteria\n\n';
+    c.acceptanceCriteria?.forEach((a: string) => {
+      md += `- ${a}\n`;
+    });
+    md += '\n## Constraints\n\n';
+    c.constraints?.forEach((x: string) => {
+      md += `- ${x}\n`;
+    });
+    md += '\n## Dependencies\n\n';
+    c.dependencies?.forEach((x: string) => {
+      md += `- ${x}\n`;
+    });
+    return md;
+  }
+
+  function formatArch(c: any): string {
+    let md = '# Architecture\n\n';
+    c.components?.forEach((x: any) => {
+      md += `## ${x.name} [${x.layer}]\n\n${x.responsibilities?.map((r: string) => `- ${r}`).join('\n')}\n\n`;
+    });
+    md += '## Bounded Contexts\n\n';
+    c.boundedContexts?.forEach((x: any) => {
+      md += `### ${x.name}\n\nAggregates: ${x.aggregates?.join(', ')}\n\n`;
+    });
+    return md;
+  }
+
+  function formatTasks(c: any): string {
+    let md = `# Tasks\n\nCoverage: ${c.traceabilityCoverage}%\n\n`;
+    c.tasks?.forEach((t: any) => {
+      md += `## ${t.id}: ${t.title}\n\nComplexity: ${t.complexity}/5\n\n${t.description}\n\n`;
+    });
+    return md;
+  }
+
+  function renderArtifact(artifact: any) {
+    if (!artifact)
+      return <div className="text-xs text-slate-400 py-8 text-center">Not generated yet</div>;
+    const c = artifact.content;
+
+    if (activeTab === 'spec')
+      return (
+        <div className="space-y-4">
+          {c.functionalRequirements?.map((r: any) => (
+            <div key={r.id} className="border-l-2 border-blue-200 pl-3">
+              <div className="flex items-center gap-2">
+                <code className="text-[10px] text-blue-600">{r.id}</code>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${r.priority === 'must' ? 'bg-red-50 text-red-700' : r.priority === 'should' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}
+                >
+                  {r.priority}
+                </span>
+              </div>
+              <p className="text-sm text-slate-700 mt-0.5">{r.description}</p>
+            </div>
+          ))}
+          {c.acceptanceCriteria?.length > 0 && (
+            <div className="pt-3 border-t border-slate-100">
+              <h4 className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">
+                Acceptance Criteria
+              </h4>
+              {c.acceptanceCriteria.map((a: string, i: number) => (
+                <p key={i} className="text-xs text-slate-600 py-1 font-mono">
+                  {a}
+                </p>
+              ))}
+            </div>
+          )}
+          {c.constraints?.length > 0 && (
+            <div className="pt-3 border-t border-slate-100">
+              <h4 className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">
+                Constraints
+              </h4>
+              {c.constraints.map((x: string, i: number) => (
+                <p key={i} className="text-xs text-slate-600 py-0.5">
+                  • {x}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
-        {step === 'done' && (
+      );
+
+    if (activeTab === 'architecture')
+      return (
+        <div className="space-y-3">
+          {c.components?.map((comp: any, i: number) => (
+            <div key={i} className="p-3 bg-slate-50 rounded border border-slate-100">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-medium text-slate-800">{comp.name}</span>
+                <code className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">
+                  {comp.layer}
+                </code>
+              </div>
+              <ul className="text-xs text-slate-500 space-y-0.5">
+                {comp.responsibilities?.map((r: string, j: number) => <li key={j}>→ {r}</li>)}
+              </ul>
+            </div>
+          ))}
+          {c.boundedContexts?.length > 0 && (
+            <div className="pt-3 border-t border-slate-100">
+              <h4 className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">
+                Bounded Contexts
+              </h4>
+              {c.boundedContexts.map((bc: any, i: number) => (
+                <div key={i} className="text-xs text-slate-600 py-1">
+                  <span className="font-medium">{bc.name}</span> — {bc.aggregates?.join(', ')}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+
+    if (activeTab === 'tasks')
+      return (
+        <div className="space-y-2">
+          <div className="text-[10px] text-slate-400 mb-3 font-mono">
+            {c.tasks?.length} tasks • {c.traceabilityCoverage}% coverage
+          </div>
+          {c.tasks?.map((t: any) => (
+            <div
+              key={t.id}
+              className="flex items-start gap-3 py-2 border-b border-slate-50 last:border-0"
+            >
+              <code className="text-[10px] text-blue-600 mt-0.5 whitespace-nowrap">{t.id}</code>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-slate-700">{t.title}</p>
+                <p className="text-xs text-slate-400 mt-0.5 truncate">{t.description}</p>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded whitespace-nowrap">
+                {t.complexity}/5
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="text-xs text-slate-400 hover:text-slate-600">
+            ← Projects
+          </Link>
+          <span className="text-xs text-slate-300">/</span>
+          <span className="text-sm font-medium text-slate-700">{project?.name || '...'}</span>
+        </div>
+        {pipelineStatus === 'complete' && (
           <button
             onClick={handleExport}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+            className="px-3 py-1.5 text-xs font-medium bg-slate-900 text-white rounded hover:bg-slate-800"
           >
-            ⬇ Download Package
+            Export .zip
           </button>
         )}
       </header>
 
-      <main className="max-w-4xl mx-auto p-6">
-        {/* Input state */}
-        {step === 'idle' && (
-          <div className="bg-white p-6 rounded-lg border space-y-4">
-            <h2 className="text-lg font-semibold">Generate Engineering Package</h2>
-            <p className="text-sm text-gray-500">
-              Describe what you want to build. ArchitectAI will generate requirements, architecture,
-              and implementation tasks.
-            </p>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your software idea in detail..."
-              rows={8}
-              className="w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-            <p className="text-xs text-gray-400">{description.length} characters (min 10)</p>
-            <button
-              onClick={handleGenerate}
-              disabled={description.length < 10}
-              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-medium"
-            >
-              Generate Engineering Package
-            </button>
+      {/* Pipeline status bar */}
+      {pipelineStatus !== 'idle' && (
+        <div className="bg-white border-b border-slate-200 px-6 py-2">
+          <div className="flex items-center gap-6">
+            {stages.map((stage, i) => (
+              <div key={stage.key} className="flex items-center gap-2">
+                {i > 0 && <span className="text-slate-200 text-xs">→</span>}
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    stage.status === 'complete'
+                      ? 'bg-green-500'
+                      : stage.status === 'running'
+                        ? 'bg-blue-500 animate-pulse'
+                        : stage.status === 'failed'
+                          ? 'bg-red-500'
+                          : 'bg-slate-200'
+                  }`}
+                />
+                <span
+                  className={`text-xs ${
+                    stage.status === 'complete'
+                      ? 'text-slate-700'
+                      : stage.status === 'running'
+                        ? 'text-blue-600 font-medium'
+                        : stage.status === 'failed'
+                          ? 'text-red-600'
+                          : 'text-slate-400'
+                  }`}
+                >
+                  {stage.label}
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Generating state */}
-        {(step === 'spec' || step === 'architecture' || step === 'tasks') && (
-          <div className="bg-white p-6 rounded-lg border">
-            <h2 className="text-lg font-semibold mb-4">Generating...</h2>
-            <p className="text-sm text-gray-500 mb-6">This may take 30–60 seconds per step.</p>
-            {renderProgress()}
-          </div>
-        )}
-
-        {/* Error state */}
-        {step === 'error' && (
-          <div className="bg-white p-6 rounded-lg border border-red-200">
-            <h2 className="text-lg font-semibold text-red-700 mb-2">Generation Failed</h2>
-            <p className="text-sm text-red-600 mb-4">{error}</p>
-            <button
-              onClick={() => setStep('idle')}
-              className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Try Again
-            </button>
-          </div>
-        )}
-
-        {/* Results state */}
-        {step === 'done' && (
+      {/* Main content */}
+      <main className="flex-1 max-w-4xl w-full mx-auto px-6 py-6">
+        {/* Idle: input form */}
+        {pipelineStatus === 'idle' && (
           <div className="space-y-4">
-            {/* Tabs */}
-            <div className="flex gap-1 bg-white rounded-lg border p-1">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                Project description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe the system you want to architect..."
+                rows={10}
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-mono"
+              />
+              <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                {description.length} chars
+              </p>
+            </div>
+            <button
+              onClick={runPipeline}
+              disabled={description.length < 10}
+              className="px-4 py-2 text-xs font-medium bg-slate-900 text-white rounded hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Run pipeline
+            </button>
+          </div>
+        )}
+
+        {/* Running: just the pipeline bar above handles visualization */}
+        {pipelineStatus === 'running' && (
+          <div className="py-12 text-center">
+            <p className="text-sm text-slate-500">Generating engineering artifacts...</p>
+            <p className="text-xs text-slate-400 mt-1">
+              This typically takes 15–60 seconds per stage.
+            </p>
+          </div>
+        )}
+
+        {/* Failed */}
+        {pipelineStatus === 'failed' && (
+          <div className="border border-red-100 bg-red-50 rounded-lg p-4">
+            <p className="text-sm text-red-700 font-medium">Pipeline failed</p>
+            <p className="text-xs text-red-600 mt-1">{error}</p>
+            <button
+              onClick={() => setPipelineStatus('idle')}
+              className="mt-3 text-xs text-slate-600 hover:text-slate-800 underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Complete: document viewer */}
+        {pipelineStatus === 'complete' && (
+          <div className="space-y-4">
+            {/* Tab bar */}
+            <div className="flex items-center gap-1 border-b border-slate-200">
               {(['spec', 'architecture', 'tasks'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
-                    activeTab === tab ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                  className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                    activeTab === tab
+                      ? 'border-slate-900 text-slate-900'
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   {tab === 'spec'
@@ -461,13 +421,24 @@ export default function Generate() {
                       : 'Tasks'}
                 </button>
               ))}
-            </div>
-
-            {/* Content */}
-            <div className="bg-white p-6 rounded-lg border">
-              {renderArtifactContent(artifacts[activeTab])}
+              <div className="flex-1" />
               {artifacts[activeTab] && <FeedbackWidget artifactId={artifacts[activeTab].id} />}
             </div>
+
+            {/* Document content */}
+            <div className="bg-white border border-slate-200 rounded-lg p-5">
+              {renderArtifact(artifacts[activeTab])}
+            </div>
+
+            {/* Metadata footer */}
+            {metadata && (
+              <div className="flex items-center gap-4 text-[10px] text-slate-400 font-mono">
+                <span>model: {metadata.model}</span>
+                <span>prompt: {metadata.promptVersion}</span>
+                <span>chunks: {metadata.ragChunksUsed}</span>
+                <span>retries: {metadata.retryCount}</span>
+              </div>
+            )}
           </div>
         )}
       </main>
