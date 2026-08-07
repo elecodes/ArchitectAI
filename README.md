@@ -6,6 +6,22 @@ ArchitectAI is an AI Software Architect that generates complete engineering pack
 
 **Local-first. Cloud-ready.**
 
+## Current Status
+
+**Version: 1.0.0** — First stable release.
+
+ArchitectAI can today:
+
+- Accept a natural language description of a software project
+- Generate structured requirements (functional requirements, acceptance criteria, constraints, dependencies)
+- Generate architecture documents (components, layers, bounded contexts, SOLID notes)
+- Generate implementation task breakdowns (complexity, acceptance criteria, dependency DAG)
+- Export a complete engineering package as a .zip file
+- Work with OpenRouter, OpenAI, Ollama, or a mock provider
+- Run locally with Docker Compose (no cloud dependency, no GPU required)
+
+See [ROADMAP.md](ROADMAP.md) for planned features.
+
 ## Features
 
 - **Specification Generation** — Functional requirements, acceptance criteria, constraints

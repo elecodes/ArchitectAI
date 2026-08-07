@@ -1,24 +1,59 @@
 # Changelog
 
-A chronological log of significant engineering decisions and changes made during the ArchitectAI project. For full context and rationale, see the corresponding ADR in `docs/adr/`.
+All notable changes to ArchitectAI are documented here.
 
 ---
 
-## 2026-08-07
+## v1.0.0 — First Stable Release (2026-08-07)
 
-- Redesigned the UI with a "Technical Blueprint" aesthetic (branch `ui/polish`): paper grid background, hairline sheets with registration marks, Instrument Sans + IBM Plex Mono, single warm clay accent (renamed token `blueprint` → `accent` so the hue is swappable). Introduced a shared design system in `frontend/src/components/` (Wordmark, Kicker, Button, Sheet, TopBar, Field, icons). Explicitly avoids common AI-UI clichés (gradients, glassmorphism, glow).
+### Major Features
 
-## 2026-08-04
+- **Specification Generation** — Transform natural language descriptions into structured requirements with functional requirements, acceptance criteria, constraints, and dependencies
+- **Architecture Generation** — Produce Clean Architecture documents with components, bounded contexts, dependency graphs, and SOLID compliance notes
+- **Task Breakdown** — Generate implementation task lists with complexity estimates, acceptance criteria, and dependency ordering (validated DAG)
+- **RAG-Enhanced Generation** — Index project files for context-aware output using pgvector semantic search
+- **Provider-Agnostic LLM** — Support for OpenRouter, OpenAI, Ollama, and Mock providers via a single interface
+- **Engineering Package Export** — Download complete .zip with README, Requirements, Architecture, Tasks, and Metadata
+- **Pipeline Progress UI** — Real-time stage tracking (Requirements → Architecture → Tasks)
+- **Feedback System** — Thumbs up/down on generated artifacts for quality signal collection
 
-- Adopted modular monolith architecture over microservices. (ADR-0001)
-- Replaced Agent Orchestrator with sequential GenerationPipeline. (ADR-0002)
-- Introduced minimal LLMClient interface for provider agnosticism and testability. (ADR-0003)
-- Introduced Context Window Manager to prevent silent token overflow. (ADR-0004)
-- Added LLM output validation with bounded retry (max 1). (ADR-0005)
-- Adopted file-based prompt versioning with artifact provenance tracking. (ADR-0006)
-- Replaced Self-Review quality scoring with optional Structural Validator. (ADR-0007)
-- Selected PostgreSQL + pgvector over dedicated vector databases. (ADR-0009)
-- Chose fixed-size chunking (512 tokens) for MVP RAG. (ADR-0010)
-- Implemented prompt injection protection via context delimiters. (ADR-0011)
-- Chose AI-focused telemetry over general application observability. (ADR-0012)
-- Switched from Ollama-only to provider-agnostic LLM architecture. Local-first. Cloud-ready. (ADR-0013, supersedes ADR-0008)
+### Architecture
+
+- Modular monolith (Express.js + TypeScript)
+- Sequential generation pipeline (no agent orchestrator)
+- LLMClient interface with 4 provider implementations
+- Context Window Manager (progressive RAG truncation)
+- Output Validator with bounded retry (max 1 retry on invalid JSON)
+- Versioned prompts with artifact provenance tracking
+- PostgreSQL + pgvector for relational data and vector search
+- Docker Compose (app + database, optional Ollama)
+
+### Security (OWASP LLM Top 10)
+
+- Prompt injection protection via delimiter isolation
+- Rate limiting (100 req/min general, 10 req/min generation)
+- .architectai-ignore with default sensitive file patterns
+- Output schema validation on all LLM responses
+- JWT authentication with 24h expiry (no default secrets)
+- Input size validation
+
+### Testing
+
+- Property-based tests (fast-check): context window budget, chunker round-trip
+- Unit tests: output validator, retry logic, spec generator
+- CI pipeline (GitHub Actions): lint, typecheck, test
+
+### Current Limitations
+
+- Single-user system (no multi-user, no RBAC)
+- Mock provider returns static responses (real provider needs API key)
+- No streaming responses (request/response only)
+- No diagram generation
+- No feedback learning loop (feedback stored but not used for improvement)
+- Token estimation uses chars/4 heuristic (not a proper tokenizer)
+- No AWS deployment (local Docker only)
+
+### Known Issues
+
+- Vite HMR cache may require `rm -rf node_modules/.vite` after certain changes
+- Font size changes require full Vite restart to reflect in browser
