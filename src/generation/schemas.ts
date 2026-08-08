@@ -70,3 +70,48 @@ export const TaskBreakdownSchema = z.object({
 });
 
 export type TaskBreakdown = z.infer<typeof TaskBreakdownSchema>;
+
+// --- Product Vision Schema ---
+
+export const ProductVisionSchema = z.object({
+  vision: z.string().min(1),
+  problem: z.string().min(1),
+  targetUsers: z.array(z.string().min(1)).min(1),
+  businessGoals: z.array(z.string().min(1)).min(1),
+  coreCapabilities: z.array(z.string().min(1)).min(1),
+  successMetrics: z.array(z.string().min(1)).min(1),
+  mvpBoundaries: z.object({
+    included: z.array(z.string()),
+    excluded: z.array(z.string()),
+  }),
+});
+
+export type ProductVision = z.infer<typeof ProductVisionSchema>;
+
+// --- Risk Assessment Schema ---
+
+export const RiskSchema = z.object({
+  id: z.string().min(1),
+  description: z.string().min(1),
+  category: z.enum([
+    'architecture',
+    'security',
+    'data',
+    'ai_llm',
+    'infrastructure',
+    'performance',
+    'operational',
+    'compliance',
+  ]),
+  probability: z.enum(['low', 'medium', 'high']),
+  impact: z.enum(['low', 'medium', 'high']),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  mitigation: z.string().min(1),
+  status: z.enum(['identified', 'mitigated', 'accepted', 'monitoring']),
+});
+
+export const RiskAssessmentSchema = z.object({
+  risks: z.array(RiskSchema).min(1).max(15),
+});
+
+export type RiskAssessment = z.infer<typeof RiskAssessmentSchema>;

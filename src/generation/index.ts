@@ -17,3 +17,9 @@ export type {
 } from './spec-generator.js';
 export type { ArchGenerationInput, ArchGenerationResult } from './arch-generator.js';
 export type { TaskGenerationInput, TaskGenerationResult } from './task-generator.js';
+export { VisionGenerator } from './vision-generator.js';
+export { RiskGenerator } from './risk-generator.js';
+export { ProductVisionSchema, RiskAssessmentSchema } from './schemas.js';
+export type { ProductVision, RiskAssessment } from './schemas.js';
+export type { VisionGenerationResult } from './vision-generator.js';
+export type { RiskGenerationResult } from './risk-generator.js';

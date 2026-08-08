@@ -19,6 +19,8 @@ const REQUIRED_PROMPTS = [
   'review-summary',
   'review-engineering',
   'review-improvements',
+  'vision',
+  'risk-assessment',
 ];
 
 export function loadPrompts(promptsDir: string): Map<string, LoadedPrompt> {

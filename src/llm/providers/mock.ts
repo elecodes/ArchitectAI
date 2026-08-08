@@ -37,6 +37,54 @@ export class MockLLMClient implements LLMClient {
       await new Promise((resolve) => setTimeout(resolve, this.mockConfig.latencyMs));
     }
 
+    const MOCK_VISION = JSON.stringify({
+      vision: 'An AI-powered platform for automated software architecture generation',
+      problem: 'Software teams spend weeks on architecture before writing code',
+      targetUsers: ['Software Architects', 'Tech Leads', 'Senior Engineers'],
+      businessGoals: ['Reduce architecture time by 60%', 'Ensure consistent quality'],
+      coreCapabilities: ['Spec generation', 'Architecture design', 'Task breakdown'],
+      successMetrics: ['Time to architecture < 5 minutes', 'User satisfaction > 4/5'],
+      mvpBoundaries: {
+        included: ['Spec', 'Architecture', 'Tasks'],
+        excluded: ['Diagrams', 'Deployment'],
+      },
+    });
+
+    const MOCK_RISK_ASSESSMENT = JSON.stringify({
+      risks: [
+        {
+          id: 'RISK-001',
+          description: 'LLM output quality varies',
+          category: 'ai_llm',
+          probability: 'medium',
+          impact: 'high',
+          severity: 'high',
+          mitigation: 'Output validation with retry',
+          status: 'mitigated',
+        },
+        {
+          id: 'RISK-002',
+          description: 'Context window overflow',
+          category: 'ai_llm',
+          probability: 'medium',
+          impact: 'medium',
+          severity: 'medium',
+          mitigation: 'Progressive RAG truncation',
+          status: 'mitigated',
+        },
+        {
+          id: 'RISK-003',
+          description: 'Prompt injection via RAG',
+          category: 'security',
+          probability: 'low',
+          impact: 'medium',
+          severity: 'low',
+          mitigation: 'Delimiter isolation',
+          status: 'monitoring',
+        },
+      ],
+    });
+
     const MOCK_SPEC = JSON.stringify({
       functionalRequirements: [
         {
@@ -213,9 +261,19 @@ export class MockLLMClient implements LLMClient {
     });
 
     // Detect which schema is expected based on system prompt content
-    // Check review prompts FIRST (most specific), then tasks, then architecture
+    // Check review prompts FIRST (most specific), then vision/risk, then tasks, then architecture
     let defaultResponse = MOCK_SPEC;
     if (
+      request.systemPrompt.includes('product vision') ||
+      request.systemPrompt.includes('product strategist')
+    ) {
+      defaultResponse = MOCK_VISION;
+    } else if (
+      request.systemPrompt.includes('risk analyst') ||
+      request.systemPrompt.includes('risk assessment')
+    ) {
+      defaultResponse = MOCK_RISK_ASSESSMENT;
+    } else if (
       request.systemPrompt.includes('project understanding summary') ||
       request.systemPrompt.includes('reviewing a codebase')
     ) {
