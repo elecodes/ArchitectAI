@@ -8,6 +8,7 @@ import { Button } from '../components/Button';
 import { TextAreaField } from '../components/Field';
 import { IconArrowLeft, IconArrowRight, IconDownload, IconCheck } from '../components/icons';
 import MermaidDiagram from '../components/MermaidDiagram';
+import { renderMermaidToSvg, svgToSvgBlob, svgToPngBlob } from '../lib/mermaid';
 
 type PipelineStatus = 'idle' | 'running' | 'complete' | 'failed';
 type StageStatus = 'pending' | 'running' | 'complete' | 'failed';
@@ -197,10 +198,21 @@ export default function Generate() {
       zip.file('03-architecture/architecture.md', formatArch(artifacts.architecture.content));
     if (artifacts.diagrams) {
       const d = artifacts.diagrams.content;
-      if (d.componentDiagram) zip.file('04-diagrams/component.mmd', d.componentDiagram);
-      if (d.containerDiagram) zip.file('04-diagrams/container.mmd', d.containerDiagram);
-      if (d.dataFlowDiagram) zip.file('04-diagrams/data-flow.mmd', d.dataFlowDiagram);
-      if (d.contextDiagram) zip.file('04-diagrams/context.mmd', d.contextDiagram);
+      const sources: Record<string, string> = {};
+      if (d.componentDiagram) sources['component'] = d.componentDiagram;
+      if (d.containerDiagram) sources['container'] = d.containerDiagram;
+      if (d.dataFlowDiagram) sources['data-flow'] = d.dataFlowDiagram;
+      if (d.contextDiagram) sources['context'] = d.contextDiagram;
+      for (const [slug, src] of Object.entries(sources)) {
+        zip.file(`04-diagrams/${slug}.mmd`, src);
+        try {
+          const svg = await renderMermaidToSvg(src);
+          zip.file(`04-diagrams/${slug}.svg`, svgToSvgBlob(svg));
+          zip.file(`04-diagrams/${slug}.png`, await svgToPngBlob(svg));
+        } catch {
+          // image export is best-effort — keep the .mmd source
+        }
+      }
     }
     if (artifacts.risks)
       zip.file('06-risk-assessment/risks.md', formatRisks(artifacts.risks.content));
@@ -412,45 +424,38 @@ export default function Generate() {
       return (
         <div className="space-y-4">
           <div>
-            <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-              Vision
-            </h4>
-            <p className="text-base text-slate-700">{c.vision}</p>
+            <Kicker className="mb-1.5 block">Vision</Kicker>
+            <p className="text-base text-ink">{c.vision}</p>
           </div>
           <div>
-            <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-              Problem
-            </h4>
-            <p className="text-sm text-slate-700">{c.problem}</p>
+            <Kicker className="mb-1.5 block">Problem</Kicker>
+            <p className="text-sm text-ink-soft">{c.problem}</p>
           </div>
           <div>
-            <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-              Target Users
-            </h4>
+            <Kicker className="mb-1.5 block">Target Users</Kicker>
             <div className="flex flex-wrap gap-1">
               {c.targetUsers?.map((u: string, i: number) => (
-                <span key={i} className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded">
+                <span
+                  key={i}
+                  className="border border-accent-soft bg-accent-soft/50 px-2 py-0.5 font-mono text-xs text-accent"
+                >
                   {u}
                 </span>
               ))}
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-              Business Goals
-            </h4>
+            <Kicker className="mb-1.5 block">Business Goals</Kicker>
             {c.businessGoals?.map((g: string, i: number) => (
-              <p key={i} className="text-sm text-slate-600 py-0.5">
+              <p key={i} className="py-0.5 text-sm text-ink-soft">
                 • {g}
               </p>
             ))}
           </div>
           <div>
-            <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-              Success Metrics
-            </h4>
+            <Kicker className="mb-1.5 block">Success Metrics</Kicker>
             {c.successMetrics?.map((m: string, i: number) => (
-              <p key={i} className="text-sm text-slate-600 py-0.5">
+              <p key={i} className="py-0.5 text-sm text-ink-soft">
                 • {m}
               </p>
             ))}
@@ -462,39 +467,39 @@ export default function Generate() {
     if (activeTab === 'diagrams') {
       return (
         <div className="space-y-4">
-          <MermaidDiagram source={c.componentDiagram} title="Component Diagram" />
-          <MermaidDiagram source={c.containerDiagram} title="Container Diagram" />
-          <MermaidDiagram source={c.dataFlowDiagram} title="Data Flow" />
-          <MermaidDiagram source={c.contextDiagram} title="System Context" />
+          <MermaidDiagram source={c.componentDiagram} title="Component Diagram" slug="component" />
+          <MermaidDiagram source={c.containerDiagram} title="Container Diagram" slug="container" />
+          <MermaidDiagram source={c.dataFlowDiagram} title="Data Flow" slug="data-flow" />
+          <MermaidDiagram source={c.contextDiagram} title="System Context" slug="context" />
         </div>
       );
     }
 
     if (activeTab === 'risks') {
       if (!c.risks) return null;
-      const severityColors: Record<string, string> = {
-        critical: 'bg-red-50 text-red-700',
-        high: 'bg-orange-50 text-orange-700',
-        medium: 'bg-amber-50 text-amber-700',
-        low: 'bg-slate-100 text-slate-600',
+      const severityChip: Record<string, string> = {
+        critical: 'border-red-700 bg-red-soft text-red-700',
+        high: 'border-red-700 bg-red-soft/60 text-red-700',
+        medium: 'border-amber bg-amber/15 text-amber',
+        low: 'border-hairline-strong bg-paper text-ink-soft',
       };
       return (
         <div className="space-y-3">
           {c.risks.map((risk: any) => (
-            <div key={risk.id} className="p-3 border border-slate-100 rounded">
-              <div className="flex items-center gap-2 mb-1">
-                <code className="text-xs text-blue-600">{risk.id}</code>
+            <div key={risk.id} className="border border-hairline bg-white p-3">
+              <div className="mb-1 flex items-center gap-2">
+                <code className="font-mono text-xs text-accent">{risk.id}</code>
                 <span
-                  className={`text-xs px-1.5 py-0.5 rounded font-medium ${severityColors[risk.severity] || ''}`}
+                  className={`border px-1.5 py-0.5 font-mono text-[11px] ${severityChip[risk.severity] || ''}`}
                 >
                   {risk.severity}
                 </span>
-                <span className="text-xs px-1.5 py-0.5 bg-slate-50 text-slate-500 rounded">
+                <span className="border border-hairline-strong bg-paper px-1.5 py-0.5 font-mono text-[11px] text-ink-soft">
                   {risk.category}
                 </span>
               </div>
-              <p className="text-sm text-slate-800 mt-1">{risk.description}</p>
-              <p className="text-xs text-slate-500 mt-1">→ {risk.mitigation}</p>
+              <p className="mt-1 text-sm text-ink">{risk.description}</p>
+              <p className="mt-1 text-xs text-ink-soft">→ {risk.mitigation}</p>
             </div>
           ))}
         </div>
