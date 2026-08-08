@@ -4,6 +4,34 @@ All notable changes to ArchitectAI are documented here.
 
 ---
 
+## v1.1.0 — Repository Review (2026-08-08)
+
+### New Features
+
+- **Repository Import** — Point to a local folder and import all source files with configurable ignore rules
+- **Technology Detection** — Static analysis detects language, framework, package manager, database, ORM, testing, Docker, CI/CD, monorepo
+- **AI Engineering Review** — 11-dimension quality scoring (1-10) covering code quality, architecture, SOLID, security, maintainability, scalability, readability, documentation, testing
+- **Improvement Suggestions** — Prioritized recommendations (critical/high/medium/low) with effort estimates
+- **Project Summary** — AI-generated overview of architecture, patterns, problems, technical debt, entry points
+- **Review UI** — New `/review` page with tabbed results viewer (Stack, Summary, Review, Improvements)
+- **Score Visualizations** — Color-coded progress bars for each quality dimension
+
+### API
+
+- `POST /api/review` — Accepts `{ path, customIgnore? }`, returns full engineering review package
+
+### New Prompts
+
+- `review-summary-v1.md` — Project understanding and architecture overview
+- `review-engineering-v1.md` — Formal engineering review (11 dimensions)
+- `review-improvements-v1.md` — Prioritized recommendations
+
+### Security
+
+- Repository analysis is purely static — never executes code, never installs dependencies
+
+---
+
 ## v1.0.0 — First Stable Release (2026-08-07)
 
 ### Major Features
