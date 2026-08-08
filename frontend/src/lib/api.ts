@@ -116,3 +116,31 @@ export async function reviewRepository(path: string, customIgnore?: string[]) {
     body: JSON.stringify({ path, customIgnore }),
   });
 }
+
+// Vision
+export async function generateVision(
+  projectId: string,
+  description: string,
+  specificationId?: string,
+) {
+  return request<any>('/vision', {
+    method: 'POST',
+    body: JSON.stringify({ projectId, description, specificationId }),
+  });
+}
+
+// Risk Assessment
+export async function generateRisks(specificationId: string, architectureId: string) {
+  return request<any>('/risks', {
+    method: 'POST',
+    body: JSON.stringify({ specificationId, architectureId }),
+  });
+}
+
+// Diagrams
+export async function generateDiagrams(architectureId: string, projectName?: string) {
+  return request<any>('/diagrams', {
+    method: 'POST',
+    body: JSON.stringify({ architectureId, projectName }),
+  });
+}
