@@ -62,9 +62,17 @@ export default function Dashboard() {
             <h2 className="font-sans text-base font-semibold text-ink">Projects</h2>
             <span className="font-mono text-xs text-faint">{projects.length}</span>
           </div>
-          <ButtonLink to="/new" size="sm">
-            <IconPlus className="h-3.5 w-3.5" /> New project
-          </ButtonLink>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/review"
+              className="px-3 py-2 text-sm font-medium border border-slate-200 text-slate-700 rounded hover:bg-slate-50 transition-colors"
+            >
+              Review repo
+            </Link>
+            <ButtonLink to="/new" size="sm">
+              <IconPlus className="h-3.5 w-3.5" /> New project
+            </ButtonLink>
+          </div>
         </div>
 
         {projects.length > 3 && (

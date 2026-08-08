@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NewProject from './pages/NewProject';
 import Generate from './pages/Generate';
+import Review from './pages/Review';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!getToken()) return <Navigate to="/login" replace />;
@@ -36,6 +37,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Generate />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/review"
+          element={
+            <ProtectedRoute>
+              <Review />
             </ProtectedRoute>
           }
         />

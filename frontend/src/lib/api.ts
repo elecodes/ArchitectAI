@@ -108,3 +108,11 @@ export async function submitFeedback(
     body: JSON.stringify({ rating, comment }),
   });
 }
+
+// Review
+export async function reviewRepository(path: string, customIgnore?: string[]) {
+  return request<any>('/review', {
+    method: 'POST',
+    body: JSON.stringify({ path, customIgnore }),
+  });
+}
