@@ -49,13 +49,24 @@ const GenerateSpecSchema = z.object({
 router.post('/specs', authMiddleware, async (req: AuthenticatedRequest, res) => {
   const input = GenerateSpecSchema.safeParse(req.body);
   if (!input.success) {
-    res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: input.error.issues.map(i => i.message).join('; ') } });
+    res
+      .status(400)
+      .json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: input.error.issues.map((i) => i.message).join('; '),
+        },
+      });
     return;
   }
 
   // Reject whitespace-only descriptions
   if (!input.data.description.trim()) {
-    res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Description cannot be whitespace only' } });
+    res
+      .status(400)
+      .json({
+        error: { code: 'VALIDATION_ERROR', message: 'Description cannot be whitespace only' },
+      });
     return;
   }
 
@@ -90,7 +101,10 @@ router.post('/specs', authMiddleware, async (req: AuthenticatedRequest, res) => 
     log.info({ artifactId: artifact.id, projectId: project.id }, 'Specification generated');
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
-    log.error({ err: (err as Error).message, projectId: project.id }, 'Specification generation failed');
+    log.error(
+      { err: (err as Error).message, projectId: project.id },
+      'Specification generation failed',
+    );
     res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
   }
 });
@@ -103,7 +117,14 @@ const GenerateArchSchema = z.object({
 router.post('/architecture', authMiddleware, async (req: AuthenticatedRequest, res) => {
   const input = GenerateArchSchema.safeParse(req.body);
   if (!input.success) {
-    res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: input.error.issues.map(i => i.message).join('; ') } });
+    res
+      .status(400)
+      .json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: input.error.issues.map((i) => i.message).join('; '),
+        },
+      });
     return;
   }
 
@@ -156,24 +177,31 @@ const GenerateTasksSchema = z.object({
 router.post('/tasks', authMiddleware, async (req: AuthenticatedRequest, res) => {
   const input = GenerateTasksSchema.safeParse(req.body);
   if (!input.success) {
-    res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: input.error.issues.map(i => i.message).join('; ') } });
+    res
+      .status(400)
+      .json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: input.error.issues.map((i) => i.message).join('; '),
+        },
+      });
     return;
   }
 
   try {
     const archArtifact = await artifactRepo.getArtifact(input.data.architectureId);
     if (!archArtifact || archArtifact.type !== 'architecture') {
-      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Architecture document not found' } });
+      res
+        .status(404)
+        .json({ error: { code: 'NOT_FOUND', message: 'Architecture document not found' } });
       return;
     }
 
-    const result = await getPipeline().generateTasks(
-      {
-        architecture: archArtifact.content as unknown as ArchitectureDocument,
-        architectureId: archArtifact.id,
-        projectId: archArtifact.projectId,
-      },
-    );
+    const result = await getPipeline().generateTasks({
+      architecture: archArtifact.content as unknown as ArchitectureDocument,
+      architectureId: archArtifact.id,
+      projectId: archArtifact.projectId,
+    });
 
     const artifact = await artifactRepo.createArtifact({
       projectId: archArtifact.projectId,
@@ -191,6 +219,186 @@ router.post('/tasks', authMiddleware, async (req: AuthenticatedRequest, res) => 
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Task generation failed');
+    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
+  }
+});
+
+// --- Generate Product Vision ---
+const GenerateVisionSchema = z.object({
+  projectId: z.string().uuid(),
+  description: z.string().min(10).max(50000),
+  specificationId: z.string().uuid().optional(),
+});
+
+router.post('/vision', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  const input = GenerateVisionSchema.safeParse(req.body);
+  if (!input.success) {
+    res
+      .status(400)
+      .json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: input.error.issues.map((i) => i.message).join('; '),
+        },
+      });
+    return;
+  }
+
+  try {
+    const project = await projectRepo.getProject(input.data.projectId, req.userId!);
+    if (!project) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Project not found' } });
+      return;
+    }
+
+    // Get spec if provided
+    let spec: Specification | undefined;
+    if (input.data.specificationId) {
+      const specArtifact = await artifactRepo.getArtifact(input.data.specificationId);
+      if (specArtifact) spec = specArtifact.content as unknown as Specification;
+    }
+
+    const { VisionGenerator } = await import('../../generation/vision-generator.js');
+    const llm = createLLMClient(config);
+    const promptsDir = join(__dirname, '..', '..', 'prompts');
+    const prompts = loadPrompts(promptsDir);
+    const generator = new VisionGenerator(llm, prompts, config.llmModel, config.llmContextWindow);
+
+    const result = await generator.generate(input.data.description, spec);
+
+    const artifact = await artifactRepo.createArtifact({
+      projectId: project.id,
+      type: 'product_vision',
+      content: result.vision as unknown as Record<string, unknown>,
+      model: result.provenance.model,
+      promptVersion: result.provenance.promptVersion,
+      contextWindowUsed: result.provenance.contextWindowUsed,
+      ragChunksUsed: 0,
+      retryCount: result.provenance.retryCount,
+    });
+
+    res.status(201).json({ artifact, provenance: result.provenance });
+  } catch (err) {
+    log.error({ err: (err as Error).message }, 'Vision generation failed');
+    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
+  }
+});
+
+// --- Generate Risk Assessment ---
+const GenerateRisksSchema = z.object({
+  specificationId: z.string().uuid(),
+  architectureId: z.string().uuid(),
+});
+
+router.post('/risks', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  const input = GenerateRisksSchema.safeParse(req.body);
+  if (!input.success) {
+    res
+      .status(400)
+      .json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: input.error.issues.map((i) => i.message).join('; '),
+        },
+      });
+    return;
+  }
+
+  try {
+    const specArtifact = await artifactRepo.getArtifact(input.data.specificationId);
+    if (!specArtifact || specArtifact.type !== 'specification') {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Specification not found' } });
+      return;
+    }
+
+    const archArtifact = await artifactRepo.getArtifact(input.data.architectureId);
+    if (!archArtifact || archArtifact.type !== 'architecture') {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Architecture not found' } });
+      return;
+    }
+
+    const { RiskGenerator } = await import('../../generation/risk-generator.js');
+    const llm = createLLMClient(config);
+    const promptsDir = join(__dirname, '..', '..', 'prompts');
+    const prompts = loadPrompts(promptsDir);
+    const generator = new RiskGenerator(llm, prompts, config.llmModel, config.llmContextWindow);
+
+    const spec = specArtifact.content as unknown as Specification;
+    const arch = archArtifact.content as unknown as ArchitectureDocument;
+    const result = await generator.generate(spec, arch);
+
+    const artifact = await artifactRepo.createArtifact({
+      projectId: specArtifact.projectId,
+      type: 'risk_assessment',
+      content: result.assessment as unknown as Record<string, unknown>,
+      parentArtifactId: archArtifact.id,
+      model: result.provenance.model,
+      promptVersion: result.provenance.promptVersion,
+      contextWindowUsed: result.provenance.contextWindowUsed,
+      ragChunksUsed: 0,
+      retryCount: result.provenance.retryCount,
+    });
+
+    res.status(201).json({ artifact, provenance: result.provenance });
+  } catch (err) {
+    log.error({ err: (err as Error).message }, 'Risk assessment failed');
+    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
+  }
+});
+
+// --- Generate Diagrams (deterministic — no LLM call) ---
+const GenerateDiagramsSchema = z.object({
+  architectureId: z.string().uuid(),
+  projectName: z.string().optional(),
+});
+
+router.post('/diagrams', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  const input = GenerateDiagramsSchema.safeParse(req.body);
+  if (!input.success) {
+    res
+      .status(400)
+      .json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: input.error.issues.map((i) => i.message).join('; '),
+        },
+      });
+    return;
+  }
+
+  try {
+    const archArtifact = await artifactRepo.getArtifact(input.data.architectureId);
+    if (!archArtifact || archArtifact.type !== 'architecture') {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Architecture not found' } });
+      return;
+    }
+
+    const { generateDiagrams, validateMermaid } = await import('../../diagrams/mermaid.js');
+    const arch = archArtifact.content as unknown as ArchitectureDocument;
+    const diagrams = generateDiagrams(arch, input.data.projectName || 'System');
+
+    // Validate all diagrams
+    const validation = Object.entries(diagrams).map(([key, source]) => ({
+      diagram: key,
+      ...validateMermaid(source),
+    }));
+
+    // Store as artifact
+    const artifact = await artifactRepo.createArtifact({
+      projectId: archArtifact.projectId,
+      type: 'diagrams',
+      content: diagrams as unknown as Record<string, unknown>,
+      parentArtifactId: archArtifact.id,
+      model: 'deterministic',
+      promptVersion: 'n/a',
+      contextWindowUsed: 0,
+      ragChunksUsed: 0,
+      retryCount: 0,
+    });
+
+    res.status(201).json({ artifact, diagrams, validation });
+  } catch (err) {
+    log.error({ err: (err as Error).message }, 'Diagram generation failed');
     res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
   }
 });

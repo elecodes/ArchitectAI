@@ -25,6 +25,9 @@ export function createApp() {
   app.use('/api/specs', generationLimiter);
   app.use('/api/architecture', generationLimiter);
   app.use('/api/tasks', generationLimiter);
+  app.use('/api/vision', generationLimiter);
+  app.use('/api/risks', generationLimiter);
+  app.use('/api/diagrams', generationLimiter);
 
   // Public routes
   app.use('/api', healthRouter);
