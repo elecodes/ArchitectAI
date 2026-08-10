@@ -10,6 +10,7 @@ import { generationRouter } from './routes/generation.js';
 import { artifactsRouter } from './routes/artifacts.js';
 import { feedbackRouter } from './routes/feedback.js';
 import { reviewRouter } from './routes/review.js';
+import { exportRouter } from './routes/export.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { generalLimiter, generationLimiter } from './middleware/rate-limiter.js';
 
@@ -37,6 +38,7 @@ export function createApp() {
   app.use('/api/projects', projectsRouter);
   app.use('/api', generationRouter);
   app.use('/api', reviewRouter);
+  app.use('/api/export', exportRouter);
   app.use('/api/artifacts', artifactsRouter);
   app.use('/api/artifacts', feedbackRouter);
 

@@ -17,6 +17,9 @@ export interface GenerationProvenance {
   ragChunksUsed: number;
   retryCount: number;
   truncated: boolean;
+  generationDurationMs?: number;
+  promptTokens?: number;
+  completionTokens?: number;
 }
 
 export interface SpecGenerationInput {
@@ -98,6 +101,9 @@ export class SpecGenerator {
       ragChunksUsed: fitResult.fittedChunks.length,
       retryCount: result.retryCount,
       truncated: fitResult.truncated,
+      generationDurationMs: result.response.durationMs,
+      promptTokens: result.response.tokenCount.prompt,
+      completionTokens: result.response.tokenCount.completion,
     };
 
     log.info({

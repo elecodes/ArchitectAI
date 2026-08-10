@@ -10,6 +10,8 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    volumes:
+      - storagedata:/app/data
 
   db:
     image: pgvector/pgvector:pg16
@@ -43,3 +45,4 @@ services:
 volumes:
   pgdata:
   ollama_models:
+  storagedata:

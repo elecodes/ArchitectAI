@@ -31,6 +31,8 @@ COPY src/db/migrations/ ./dist/db/migrations/
 # Frontend (serve as static files)
 COPY --from=frontend-builder /app/dist ./dist/public
 
+RUN mkdir -p /app/data && chown -R app:app /app/data
+
 USER app
 EXPOSE 3001
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD curl -f http://localhost:3001/api/health || exit 1

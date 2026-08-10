@@ -81,6 +81,9 @@ export class ArchGenerator {
       ragChunksUsed: fitResult.fittedChunks.length,
       retryCount: result.retryCount,
       truncated: fitResult.truncated,
+      generationDurationMs: result.response.durationMs,
+      promptTokens: result.response.tokenCount.prompt,
+      completionTokens: result.response.tokenCount.completion,
     };
 
     log.info(

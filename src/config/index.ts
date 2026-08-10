@@ -3,10 +3,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const LLM_PROVIDERS = ['openrouter', 'openai', 'ollama', 'mock'] as const;
-const EMBEDDING_PROVIDERS = ['openai', 'openrouter', 'ollama', 'mock'] as const;
+const LLM_PROVIDERS = ['openrouter', 'openai', 'ollama', 'mock', 'bedrock'] as const;
+const EMBEDDING_PROVIDERS = ['openai', 'openrouter', 'ollama', 'mock', 'bedrock'] as const;
+const STORAGE_PROVIDERS = ['local', 's3'] as const;
 
-const configSchema = z.object({
+export const configSchema = z.object({
   // Server
   port: z.coerce.number().default(3001),
   logLevel: z.string().default('info'),
@@ -35,9 +36,45 @@ const configSchema = z.object({
 
   // Ollama (optional)
   ollamaUrl: z.string().default('http://localhost:11434'),
+
+  // AWS Bedrock (optional)
+  bedrockModel: z.string().default('anthropic.claude-3-5-sonnet-20240620-v1:0'),
+  bedrockRegion: z.string().default('us-east-1'),
+  bedrockTimeoutMs: z.coerce.number().default(60000),
+  bedrockEmbeddingModel: z.string().default('amazon.titan-embed-text-v2'),
+
+  // Artifact storage (local default, S3 optional)
+  storageProvider: z.enum(STORAGE_PROVIDERS).default('local'),
+  storageLocalDir: z.string().default('./data/storage'),
+  s3Bucket: z.string().default(''),
+  s3Region: z.string().default(''),
+  s3Prefix: z.string().default('architectai'),
+  s3ForcePathStyle: z
+    .enum(['true', 'false'])
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
+
+  // CloudWatch observability (optional, off by default)
+  cloudwatchEnabled: z
+    .enum(['true', 'false'])
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
+  cloudwatchRegion: z.string().default(''),
+  cloudwatchNamespace: z.string().default('ArchitectAI'),
+}).superRefine((val, ctx) => {
+  if (val.storageProvider === 's3' && !val.s3Bucket) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['s3Bucket'],
+      message: 'S3_BUCKET is required when STORAGE_PROVIDER=s3',
+    });
+  }
 });
 
 export type Config = z.infer<typeof configSchema>;
+export const storageProviderOptions = STORAGE_PROVIDERS;
 
 function loadConfig(): Config {
   const raw = {
@@ -55,6 +92,19 @@ function loadConfig(): Config {
     embeddingModel: process.env.EMBEDDING_MODEL,
     embeddingDimensions: process.env.EMBEDDING_DIMENSIONS,
     ollamaUrl: process.env.OLLAMA_URL,
+    bedrockModel: process.env.BEDROCK_MODEL,
+    bedrockRegion: process.env.BEDROCK_REGION,
+    bedrockTimeoutMs: process.env.BEDROCK_TIMEOUT_MS,
+    bedrockEmbeddingModel: process.env.BEDROCK_EMBEDDING_MODEL,
+    storageProvider: process.env.STORAGE_PROVIDER,
+    storageLocalDir: process.env.STORAGE_LOCAL_DIR,
+    s3Bucket: process.env.S3_BUCKET,
+    s3Region: process.env.S3_REGION,
+    s3Prefix: process.env.S3_PREFIX,
+    s3ForcePathStyle: process.env.S3_FORCE_PATH_STYLE,
+    cloudwatchEnabled: process.env.CLOUDWATCH_ENABLED,
+    cloudwatchRegion: process.env.CLOUDWATCH_REGION,
+    cloudwatchNamespace: process.env.CLOUDWATCH_METRICS_NAMESPACE,
   };
 
   const result = configSchema.safeParse(raw);

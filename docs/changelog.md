@@ -4,6 +4,39 @@ All notable changes to ArchitectAI are documented here.
 
 ---
 
+## v1.3.0 — AWS Foundation (2026-08-10)
+
+### New Features
+
+- **AWS Bedrock LLM Provider** — Generate and embed via Amazon Bedrock (`LLM_PROVIDER=bedrock`, `EMBEDDING_PROVIDER=bedrock`) with Claude Messages API and Amazon Titan embeddings; credentials resolved via the SDK default provider chain
+- **S3 Artifact Storage** — Optional artifact persistence (`STORAGE_PROVIDER=s3`) with SSE-S3 encryption and configurable key prefix; local filesystem storage remains the default
+- **S3-Compatible Endpoint Support** — optional `S3_FORCE_PATH_STYLE` for LocalStack/MinIO; full S3 + CloudWatch flows verified end-to-end against LocalStack 4.13.1
+- **Server-Side Export Package** — `POST/GET /api/export/:projectId` assembles and stores the engineering package on the configured provider; "Save to storage" / "Download stored" actions on the Generate page
+- **CloudWatch Telemetry** — Optional `PutMetricData` sink (`CLOUDWATCH_ENABLED=true`, off by default) with 10 metrics per generation and Module/Model/Provider/Status dimensions
+- **Generation Telemetry Wiring** — All six generation endpoints now record success/failure telemetry via `GenerationTracker` (previously dead code); new `provider` column (migration 008) for cost attribution
+
+### Configuration
+
+- `BEDROCK_MODEL`, `BEDROCK_REGION`, `BEDROCK_TIMEOUT_MS`, `BEDROCK_EMBEDDING_MODEL`
+- `STORAGE_PROVIDER`, `STORAGE_LOCAL_DIR`, `S3_BUCKET` (required when `STORAGE_PROVIDER=s3`), `S3_REGION`, `S3_PREFIX`, `S3_FORCE_PATH_STYLE`
+- `CLOUDWATCH_ENABLED`, `CLOUDWATCH_REGION`, `CLOUDWATCH_METRICS_NAMESPACE`
+
+### Documentation
+
+- `docs/aws/architecture.md` — local vs AWS mode, env reference, out-of-scope list
+- `docs/aws/iam.md` — least-privilege IAM policy for Bedrock/S3/CloudWatch
+- `docs/aws/cost-safety.md` — budgets, lifecycle rules, cleanup, verification checklist
+- `docs/adr/0015-optional-aws-integrations.md` — AWS integrations are optional; re-evaluates ADR-0014 deferred OWASP items
+- `docs/aws/architecture.md` — LocalStack section: test S3 + CloudWatch locally with no AWS account or spend
+
+### Security
+
+- All AWS integrations are opt-in; default local run has zero AWS presence
+- No credentials in config — SDK default provider chain only; no access keys committed
+- CloudWatch sink is fire-and-forget and dynamically imported (no SDK init when disabled)
+
+---
+
 ## v1.2.0 — Architecture Visualization (2026-08-08)
 
 ### New Features

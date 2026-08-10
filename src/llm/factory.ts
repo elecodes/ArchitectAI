@@ -2,6 +2,7 @@ import type { LLMClient } from './interface.js';
 import { MockLLMClient } from './providers/mock.js';
 import { OpenRouterClient } from './providers/openrouter.js';
 import { OpenAIClient } from './providers/openai.js';
+import { BedrockClient } from './providers/bedrock.js';
 import type { Config } from '../config/index.js';
 
 export function createLLMClient(config: Config): LLMClient {
@@ -31,6 +32,13 @@ export function createLLMClient(config: Config): LLMClient {
         model: config.llmModel,
         baseUrl: config.ollamaUrl + '/v1',
         embeddingModel: config.embeddingModel,
+      });
+    case 'bedrock':
+      return new BedrockClient({
+        model: config.bedrockModel,
+        region: config.bedrockRegion,
+        timeoutMs: config.bedrockTimeoutMs,
+        embeddingModel: config.bedrockEmbeddingModel,
       });
     default:
       throw new Error(`Unknown LLM provider: "${config.llmProvider}"`);
@@ -65,6 +73,13 @@ export function createEmbeddingClient(config: Config): LLMClient {
         model: config.embeddingModel,
         baseUrl: config.ollamaUrl + '/v1',
         embeddingModel: config.embeddingModel,
+      });
+    case 'bedrock':
+      return new BedrockClient({
+        model: config.bedrockModel,
+        region: config.bedrockRegion,
+        timeoutMs: config.bedrockTimeoutMs,
+        embeddingModel: config.bedrockEmbeddingModel,
       });
     default:
       throw new Error(`Unknown embedding provider: "${config.embeddingProvider}"`);

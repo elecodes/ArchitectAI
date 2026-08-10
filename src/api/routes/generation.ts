@@ -13,6 +13,14 @@ import { createChildLogger } from '../../logger.js';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Specification, ArchitectureDocument } from '../../generation/schemas.js';
+import {
+  TelemetryService,
+  GenerationTracker,
+  CloudWatchSink,
+  toGenerationRecord,
+  failureRecord,
+  type RecordGenerationOptions,
+} from '../../telemetry/index.js';
 
 const log = createChildLogger('generation-api');
 const router = Router();
@@ -21,6 +29,36 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Lazy-initialize pipeline (created on first request to avoid startup dependency)
 let pipeline: GenerationPipeline | null = null;
 let retriever: RAGRetriever | null = null;
+let telemetry: TelemetryService | null = null;
+
+function getTelemetry(): TelemetryService {
+  if (!telemetry) {
+    telemetry = new TelemetryService(
+      new GenerationTracker(getPool()),
+      new CloudWatchSink({
+        enabled: config.cloudwatchEnabled,
+        region: config.cloudwatchRegion,
+        namespace: config.cloudwatchNamespace,
+      }),
+    );
+  }
+  return telemetry;
+}
+
+function recordSuccess(opts: RecordGenerationOptions): void {
+  getTelemetry().record(toGenerationRecord(opts));
+}
+
+function recordFailure(module: string, errorCategory: string): void {
+  getTelemetry().record(
+    failureRecord({
+      module,
+      provider: config.llmProvider,
+      model: config.llmModel,
+      errorCategory,
+    }),
+  );
+}
 
 function getPipeline(): GenerationPipeline {
   if (!pipeline) {
@@ -99,12 +137,22 @@ router.post('/specs', authMiddleware, async (req: AuthenticatedRequest, res) => 
     });
 
     log.info({ artifactId: artifact.id, projectId: project.id }, 'Specification generated');
+    recordSuccess({
+      module: 'spec',
+      provider: config.llmProvider,
+      provenance: result.provenance,
+      contextWindowSize: config.llmContextWindow,
+      embeddingDurationMs: ragResult.embeddingDurationMs,
+      retrievalDurationMs: ragResult.retrievalDurationMs,
+      retrievedChunks: ragResult.chunks.length,
+    });
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
     log.error(
       { err: (err as Error).message, projectId: project.id },
       'Specification generation failed',
     );
+    recordFailure('spec', 'generation_error');
     res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
   }
 });
@@ -162,9 +210,19 @@ router.post('/architecture', authMiddleware, async (req: AuthenticatedRequest, r
     });
 
     log.info({ artifactId: artifact.id }, 'Architecture generated');
+    recordSuccess({
+      module: 'architecture',
+      provider: config.llmProvider,
+      provenance: result.provenance,
+      contextWindowSize: config.llmContextWindow,
+      embeddingDurationMs: ragResult.embeddingDurationMs,
+      retrievalDurationMs: ragResult.retrievalDurationMs,
+      retrievedChunks: ragResult.chunks.length,
+    });
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Architecture generation failed');
+    recordFailure('architecture', 'generation_error');
     res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
   }
 });
@@ -216,9 +274,17 @@ router.post('/tasks', authMiddleware, async (req: AuthenticatedRequest, res) => 
     });
 
     log.info({ artifactId: artifact.id }, 'Tasks generated');
+    recordSuccess({
+      module: 'tasks',
+      provider: config.llmProvider,
+      provenance: result.provenance,
+      contextWindowSize: config.llmContextWindow,
+      retrievedChunks: 0,
+    });
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Task generation failed');
+    recordFailure('tasks', 'generation_error');
     res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
   }
 });
@@ -277,9 +343,18 @@ router.post('/vision', authMiddleware, async (req: AuthenticatedRequest, res) =>
       retryCount: result.provenance.retryCount,
     });
 
+    recordSuccess({
+      module: 'vision',
+      provider: config.llmProvider,
+      provenance: result.provenance,
+      contextWindowSize: config.llmContextWindow,
+      retrievedChunks: 0,
+    });
+
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Vision generation failed');
+    recordFailure('vision', 'generation_error');
     res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
   }
 });
@@ -339,9 +414,18 @@ router.post('/risks', authMiddleware, async (req: AuthenticatedRequest, res) => 
       retryCount: result.provenance.retryCount,
     });
 
+    recordSuccess({
+      module: 'risks',
+      provider: config.llmProvider,
+      provenance: result.provenance,
+      contextWindowSize: config.llmContextWindow,
+      retrievedChunks: 0,
+    });
+
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Risk assessment failed');
+    recordFailure('risks', 'generation_error');
     res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
   }
 });
@@ -375,7 +459,9 @@ router.post('/diagrams', authMiddleware, async (req: AuthenticatedRequest, res) 
 
     const { generateDiagrams, validateMermaid } = await import('../../diagrams/mermaid.js');
     const arch = archArtifact.content as unknown as ArchitectureDocument;
+    const start = Date.now();
     const diagrams = generateDiagrams(arch, input.data.projectName || 'System');
+    const generationDurationMs = Date.now() - start;
 
     // Validate all diagrams
     const validation = Object.entries(diagrams).map(([key, source]) => ({
@@ -396,9 +482,27 @@ router.post('/diagrams', authMiddleware, async (req: AuthenticatedRequest, res) 
       retryCount: 0,
     });
 
+    recordSuccess({
+      module: 'diagrams',
+      provider: 'deterministic',
+      provenance: {
+        model: 'deterministic',
+        promptVersion: 'n/a',
+        generatedAt: new Date().toISOString(),
+        contextWindowUsed: 0,
+        ragChunksUsed: 0,
+        retryCount: 0,
+        truncated: false,
+        generationDurationMs,
+      },
+      contextWindowSize: 0,
+      retrievedChunks: 0,
+    });
+
     res.status(201).json({ artifact, diagrams, validation });
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Diagram generation failed');
+    recordFailure('diagrams', 'generation_error');
     res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
   }
 });

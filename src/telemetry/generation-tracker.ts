@@ -5,6 +5,7 @@ const log = createChildLogger('telemetry');
 
 export interface GenerationRecord {
   module: string;
+  provider?: string;
   model: string;
   promptVersion: string;
   generationDurationMs: number;
@@ -32,15 +33,16 @@ export class GenerationTracker {
     try {
       await this.pool.query(
         `INSERT INTO generation_telemetry (
-          module, model, prompt_version,
+          module, provider, model, prompt_version,
           generation_duration_ms, embedding_duration_ms, retrieval_duration_ms, total_duration_ms,
           prompt_tokens, completion_tokens, total_tokens,
           retrieved_chunks, fitted_chunks, truncated, similarity_scores,
           context_window_size, context_window_used,
           status, retry_count, error_category
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
         [
           data.module,
+          data.provider || 'local',
           data.model,
           data.promptVersion,
           data.generationDurationMs,

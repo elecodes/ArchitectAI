@@ -6,7 +6,7 @@ import Sheet from '../components/Sheet';
 import Kicker from '../components/Kicker';
 import { Button } from '../components/Button';
 import { TextAreaField } from '../components/Field';
-import { IconArrowLeft, IconArrowRight, IconDownload, IconCheck } from '../components/icons';
+import { IconArrowLeft, IconArrowRight, IconDownload, IconCheck, IconUpload } from '../components/icons';
 import MermaidDiagram from '../components/MermaidDiagram';
 import { renderMermaidToSvg, svgToSvgBlob, svgToPngBlob } from '../lib/mermaid';
 
@@ -45,7 +45,7 @@ function FeedbackWidget({ artifactId }: { artifactId: string }) {
   }
   if (submitted) return <span className="font-mono text-xs text-faint">✓ recorded</span>;
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">
       <button
         onClick={() => submit('helpful')}
         className="font-mono text-xs text-faint transition-colors hover:text-accent"
@@ -100,6 +100,9 @@ export default function Generate() {
     'vision' | 'spec' | 'architecture' | 'diagrams' | 'tasks' | 'risks'
   >('vision');
   const [metadata, setMetadata] = useState<any>(null);
+  const [storageStatus, setStorageStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>(
+    'idle',
+  );
 
   useEffect(() => {
     if (projectId) {
@@ -229,6 +232,32 @@ export default function Generate() {
     a.download = `${name.replace(/\s+/g, '_')}.zip`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function handleSaveToStorage() {
+    if (!projectId) return;
+    setStorageStatus('saving');
+    try {
+      await api.exportToStorage(projectId);
+      setStorageStatus('saved');
+    } catch {
+      setStorageStatus('failed');
+    }
+  }
+
+  async function handleDownloadStored() {
+    if (!projectId) return;
+    try {
+      const blob = await api.getStoredExport(projectId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(project?.name || 'project').replace(/\s+/g, '_')}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setStorageStatus('failed');
+    }
   }
 
   function formatSpec(c: any): string {
@@ -526,9 +555,30 @@ export default function Generate() {
         }
         right={
           pipelineStatus === 'complete' && (
-            <Button size="sm" onClick={handleExport}>
-              <IconDownload className="h-3.5 w-3.5" /> Export .zip
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveToStorage}
+                disabled={storageStatus === 'saving'}
+                title="Store the engineering package on the configured storage provider"
+              >
+                <IconUpload className="h-3.5 w-3.5" />
+                {storageStatus === 'saving'
+                  ? 'Saving…'
+                  : storageStatus === 'saved'
+                    ? 'Saved'
+                    : 'Save to storage'}
+              </Button>
+              {storageStatus === 'saved' && (
+                <Button variant="ghost" size="sm" onClick={handleDownloadStored}>
+                  <IconDownload className="h-3.5 w-3.5" /> Download stored
+                </Button>
+              )}
+              <Button size="sm" onClick={handleExport}>
+                <IconDownload className="h-3.5 w-3.5" /> Export .zip
+              </Button>
+            </div>
           )
         }
       />
@@ -613,35 +663,38 @@ export default function Generate() {
 
         {pipelineStatus === 'complete' && (
           <div className="space-y-4">
-            <div className="flex items-center gap-1 border-b border-hairline overflow-x-auto">
-              {(['vision', 'spec', 'architecture', 'diagrams', 'tasks', 'risks'] as const).map(
-                (tab, i) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`-mb-px flex items-center gap-2 border-b px-3 py-2.5 font-mono text-[13px] tracking-[0.05em] transition-colors whitespace-nowrap ${
-                      activeTab === tab
-                        ? 'border-ink text-ink'
-                        : 'border-transparent text-faint hover:text-ink-soft'
-                    }`}
-                  >
-                    <span className="text-[11px] text-faint">0{i + 1}</span>
-                    {tab === 'vision'
-                      ? 'Vision'
-                      : tab === 'spec'
-                        ? 'Requirements'
-                        : tab === 'architecture'
-                          ? 'Architecture'
-                          : tab === 'diagrams'
-                            ? 'Diagrams'
-                            : tab === 'tasks'
-                              ? 'Tasks'
-                              : 'Risks'}
-                  </button>
-                ),
-              )}
-              <div className="flex-1" />
-              {artifacts[activeTab] && <FeedbackWidget artifactId={artifacts[activeTab].id} />}
+            <div className="flex items-stretch border-b border-hairline">
+              <div className="flex flex-1 items-center gap-1 overflow-x-auto">
+                {(['vision', 'spec', 'architecture', 'diagrams', 'tasks', 'risks'] as const).map(
+                  (tab, i) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`-mb-px flex items-center gap-2 border-b px-3 py-2.5 font-mono text-[13px] tracking-[0.05em] transition-colors whitespace-nowrap ${
+                        activeTab === tab
+                          ? 'border-ink text-ink'
+                          : 'border-transparent text-faint hover:text-ink-soft'
+                      }`}
+                    >
+                      <span className="text-[11px] text-faint">0{i + 1}</span>
+                      {tab === 'vision'
+                        ? 'Vision'
+                        : tab === 'spec'
+                          ? 'Requirements'
+                          : tab === 'architecture'
+                            ? 'Architecture'
+                            : tab === 'diagrams'
+                              ? 'Diagrams'
+                              : tab === 'tasks'
+                                ? 'Tasks'
+                                : 'Risks'}
+                    </button>
+                  ),
+                )}
+              </div>
+              <div className="flex shrink-0 items-center pl-2">
+                {artifacts[activeTab] && <FeedbackWidget artifactId={artifacts[activeTab].id} />}
+              </div>
             </div>
 
             <Sheet className="px-6 py-5">{renderArtifact(artifacts[activeTab])}</Sheet>
