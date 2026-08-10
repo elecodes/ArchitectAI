@@ -14,6 +14,7 @@ export interface S3StoreConfig {
   bucket: string;
   region?: string;
   prefix?: string;
+  forcePathStyle?: boolean;
 }
 
 /**
@@ -26,7 +27,10 @@ export class S3DocumentStore implements DocumentStore {
   private readonly prefix: string;
 
   constructor(private readonly config: S3StoreConfig) {
-    this.client = new S3Client({ region: config.region || undefined });
+    this.client = new S3Client({
+      region: config.region || undefined,
+      forcePathStyle: config.forcePathStyle,
+    });
     this.prefix = (config.prefix || '').replace(/^\/+|\/+$/g, '');
   }
 
@@ -87,7 +91,14 @@ export class S3DocumentStore implements DocumentStore {
           ContinuationToken: token,
         }),
       );
-      keys.push(...(res.Contents || []).map((c) => c.Key || ''));
+      for (const c of res.Contents || []) {
+        const key = c.Key || '';
+        if (this.prefix && key.startsWith(`${this.prefix}/`)) {
+          keys.push(key.slice(this.prefix.length + 1));
+        } else {
+          keys.push(key);
+        }
+      }
       token = res.NextContinuationToken;
     } while (token);
     return keys;

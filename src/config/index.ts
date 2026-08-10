@@ -49,6 +49,11 @@ export const configSchema = z.object({
   s3Bucket: z.string().default(''),
   s3Region: z.string().default(''),
   s3Prefix: z.string().default('architectai'),
+  s3ForcePathStyle: z
+    .enum(['true', 'false'])
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
 
   // CloudWatch observability (optional, off by default)
   cloudwatchEnabled: z
@@ -96,6 +101,7 @@ function loadConfig(): Config {
     s3Bucket: process.env.S3_BUCKET,
     s3Region: process.env.S3_REGION,
     s3Prefix: process.env.S3_PREFIX,
+    s3ForcePathStyle: process.env.S3_FORCE_PATH_STYLE,
     cloudwatchEnabled: process.env.CLOUDWATCH_ENABLED,
     cloudwatchRegion: process.env.CLOUDWATCH_REGION,
     cloudwatchNamespace: process.env.CLOUDWATCH_METRICS_NAMESPACE,

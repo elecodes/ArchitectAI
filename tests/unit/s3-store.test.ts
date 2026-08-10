@@ -11,6 +11,7 @@ vi.mock('@aws-sdk/client-s3', () => ({
 }));
 
 import { S3DocumentStore } from '../../src/storage/s3-store.js';
+import { S3Client } from '@aws-sdk/client-s3';
 
 describe('S3DocumentStore', () => {
   const store = new S3DocumentStore({
@@ -50,17 +51,46 @@ describe('S3DocumentStore', () => {
     expect(sendMock.mock.calls[0][0].input.Key).toBe('architectai/k.txt');
   });
 
-  it('paginates through listing results', async () => {
+  it('paginates through listing results and strips the store prefix from keys', async () => {
     sendMock
       .mockReset()
       .mockResolvedValueOnce({
-        Contents: [{ Key: 'architectai/a.txt' }],
+        Contents: [{ Key: 'architectai/exports/p1/package.zip' }],
         NextContinuationToken: 'token',
       })
-      .mockResolvedValueOnce({ Contents: [{ Key: 'architectai/b.txt' }] });
+      .mockResolvedValueOnce({ Contents: [{ Key: 'architectai/exports/p2/package.zip' }] });
 
     const keys = await store.listObjects('exports/');
-    expect(keys).toEqual(['architectai/a.txt', 'architectai/b.txt']);
+    expect(keys).toEqual(['exports/p1/package.zip', 'exports/p2/package.zip']);
     expect(sendMock).toHaveBeenCalledTimes(2);
+    expect(sendMock.mock.calls[0][0].input.Prefix).toBe('architectai/exports/');
+  });
+
+  it('returns keys as-is when no prefix is configured', async () => {
+    const noPrefixStore = new S3DocumentStore({ bucket: 'my-bucket', region: 'us-east-1' });
+    sendMock.mockReset().mockResolvedValue({
+      Contents: [{ Key: 'exports/p1/package.zip' }],
+    });
+
+    const keys = await noPrefixStore.listObjects('exports/');
+    expect(keys).toEqual(['exports/p1/package.zip']);
+    expect(sendMock.mock.calls[0][0].input.Prefix).toBe('exports/');
+  });
+
+  it('passes forcePathStyle through to S3Client when set', () => {
+    const clientMock = vi.mocked(S3Client);
+    clientMock.mockClear();
+    new S3DocumentStore({ bucket: 'b', forcePathStyle: true });
+    expect(clientMock).toHaveBeenCalledWith(
+      expect.objectContaining({ forcePathStyle: true }),
+    );
+  });
+
+  it('omits forcePathStyle when not configured', () => {
+    const clientMock = vi.mocked(S3Client);
+    clientMock.mockClear();
+    new S3DocumentStore({ bucket: 'b' });
+    const args = clientMock.mock.calls[0][0] as Record<string, unknown>;
+    expect(args.forcePathStyle).toBeUndefined();
   });
 });

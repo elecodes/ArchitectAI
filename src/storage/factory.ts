@@ -15,6 +15,7 @@ export function createDocumentStore(config: Config): DocumentStore {
         bucket: config.s3Bucket,
         region: config.s3Region || undefined,
         prefix: config.s3Prefix,
+        forcePathStyle: config.s3ForcePathStyle,
       });
     default:
       throw new Error(`Unknown storage provider: "${config.storageProvider}"`);
