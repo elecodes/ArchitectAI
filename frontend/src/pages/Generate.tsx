@@ -45,7 +45,7 @@ function FeedbackWidget({ artifactId }: { artifactId: string }) {
   }
   if (submitted) return <span className="font-mono text-xs text-faint">✓ recorded</span>;
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">
       <button
         onClick={() => submit('helpful')}
         className="font-mono text-xs text-faint transition-colors hover:text-accent"
@@ -663,35 +663,38 @@ export default function Generate() {
 
         {pipelineStatus === 'complete' && (
           <div className="space-y-4">
-            <div className="flex items-center gap-1 border-b border-hairline overflow-x-auto">
-              {(['vision', 'spec', 'architecture', 'diagrams', 'tasks', 'risks'] as const).map(
-                (tab, i) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`-mb-px flex items-center gap-2 border-b px-3 py-2.5 font-mono text-[13px] tracking-[0.05em] transition-colors whitespace-nowrap ${
-                      activeTab === tab
-                        ? 'border-ink text-ink'
-                        : 'border-transparent text-faint hover:text-ink-soft'
-                    }`}
-                  >
-                    <span className="text-[11px] text-faint">0{i + 1}</span>
-                    {tab === 'vision'
-                      ? 'Vision'
-                      : tab === 'spec'
-                        ? 'Requirements'
-                        : tab === 'architecture'
-                          ? 'Architecture'
-                          : tab === 'diagrams'
-                            ? 'Diagrams'
-                            : tab === 'tasks'
-                              ? 'Tasks'
-                              : 'Risks'}
-                  </button>
-                ),
-              )}
-              <div className="flex-1" />
-              {artifacts[activeTab] && <FeedbackWidget artifactId={artifacts[activeTab].id} />}
+            <div className="flex items-stretch border-b border-hairline">
+              <div className="flex flex-1 items-center gap-1 overflow-x-auto">
+                {(['vision', 'spec', 'architecture', 'diagrams', 'tasks', 'risks'] as const).map(
+                  (tab, i) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`-mb-px flex items-center gap-2 border-b px-3 py-2.5 font-mono text-[13px] tracking-[0.05em] transition-colors whitespace-nowrap ${
+                        activeTab === tab
+                          ? 'border-ink text-ink'
+                          : 'border-transparent text-faint hover:text-ink-soft'
+                      }`}
+                    >
+                      <span className="text-[11px] text-faint">0{i + 1}</span>
+                      {tab === 'vision'
+                        ? 'Vision'
+                        : tab === 'spec'
+                          ? 'Requirements'
+                          : tab === 'architecture'
+                            ? 'Architecture'
+                            : tab === 'diagrams'
+                              ? 'Diagrams'
+                              : tab === 'tasks'
+                                ? 'Tasks'
+                                : 'Risks'}
+                    </button>
+                  ),
+                )}
+              </div>
+              <div className="flex shrink-0 items-center pl-2">
+                {artifacts[activeTab] && <FeedbackWidget artifactId={artifacts[activeTab].id} />}
+              </div>
             </div>
 
             <Sheet className="px-6 py-5">{renderArtifact(artifacts[activeTab])}</Sheet>
