@@ -4,6 +4,27 @@ All notable changes to ArchitectAI are documented here.
 
 ---
 
+## v1.2.0 — Architecture Visualization (2026-08-08)
+
+### New Features
+
+- **6-Stage Generation Pipeline** — Vision → Requirements → Architecture → Diagrams → Tasks → Risks with real-time stage tracking
+- **Product Vision** — AI-generated vision statement, problem, target users, business goals, and success metrics
+- **Risk Assessment** — Categorized, severity-tagged risks (critical/high/medium/low) with mitigation strategies
+- **Mermaid Architecture Diagrams** — Component, Container, Data Flow, and System Context diagrams rendered from generated source
+- **Per-Diagram Export** — Download any diagram as SVG or PNG directly from the viewer
+- **Diagram Zoom** — Zoom in/out with reset and percentage indicator; source/diagram toggle per diagram
+- **Rich Engineering Package** — Export .zip now includes rendered PNG and SVG for each diagram alongside `.mmd` sources
+- **Design System Restyle** — Vision, risks, and diagram views updated to the blueprint visual language (hairline sheets, mono labels, clay accent)
+
+### API
+
+- `POST /api/generate/vision` — Product vision generation
+- `POST /api/generate/risks` — Risk assessment generation
+- `POST /api/generate/diagrams` — Mermaid diagram generation (component, container, data flow, context)
+
+---
+
 ## v1.1.0 — Repository Review (2026-08-08)
 
 ### New Features
