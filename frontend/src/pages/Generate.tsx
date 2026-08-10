@@ -6,7 +6,7 @@ import Sheet from '../components/Sheet';
 import Kicker from '../components/Kicker';
 import { Button } from '../components/Button';
 import { TextAreaField } from '../components/Field';
-import { IconArrowLeft, IconArrowRight, IconDownload, IconCheck } from '../components/icons';
+import { IconArrowLeft, IconArrowRight, IconDownload, IconCheck, IconUpload } from '../components/icons';
 import MermaidDiagram from '../components/MermaidDiagram';
 import { renderMermaidToSvg, svgToSvgBlob, svgToPngBlob } from '../lib/mermaid';
 
@@ -100,6 +100,9 @@ export default function Generate() {
     'vision' | 'spec' | 'architecture' | 'diagrams' | 'tasks' | 'risks'
   >('vision');
   const [metadata, setMetadata] = useState<any>(null);
+  const [storageStatus, setStorageStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>(
+    'idle',
+  );
 
   useEffect(() => {
     if (projectId) {
@@ -229,6 +232,32 @@ export default function Generate() {
     a.download = `${name.replace(/\s+/g, '_')}.zip`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function handleSaveToStorage() {
+    if (!projectId) return;
+    setStorageStatus('saving');
+    try {
+      await api.exportToStorage(projectId);
+      setStorageStatus('saved');
+    } catch {
+      setStorageStatus('failed');
+    }
+  }
+
+  async function handleDownloadStored() {
+    if (!projectId) return;
+    try {
+      const blob = await api.getStoredExport(projectId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(project?.name || 'project').replace(/\s+/g, '_')}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setStorageStatus('failed');
+    }
   }
 
   function formatSpec(c: any): string {
@@ -526,9 +555,30 @@ export default function Generate() {
         }
         right={
           pipelineStatus === 'complete' && (
-            <Button size="sm" onClick={handleExport}>
-              <IconDownload className="h-3.5 w-3.5" /> Export .zip
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveToStorage}
+                disabled={storageStatus === 'saving'}
+                title="Store the engineering package on the configured storage provider"
+              >
+                <IconUpload className="h-3.5 w-3.5" />
+                {storageStatus === 'saving'
+                  ? 'Saving…'
+                  : storageStatus === 'saved'
+                    ? 'Saved'
+                    : 'Save to storage'}
+              </Button>
+              {storageStatus === 'saved' && (
+                <Button variant="ghost" size="sm" onClick={handleDownloadStored}>
+                  <IconDownload className="h-3.5 w-3.5" /> Download stored
+                </Button>
+              )}
+              <Button size="sm" onClick={handleExport}>
+                <IconDownload className="h-3.5 w-3.5" /> Export .zip
+              </Button>
+            </div>
           )
         }
       />

@@ -39,6 +39,26 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+async function requestBlob(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, { headers });
+
+  if (res.status === 401) {
+    setToken(null);
+    window.location.href = '/login';
+    throw new Error('Unauthorized');
+  }
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: { message: res.statusText } }));
+    throw new Error(error.error?.message || `Request failed: ${res.status}`);
+  }
+
+  return res.blob();
+}
+
 // Auth
 export async function login(username: string, password: string): Promise<{ token: string }> {
   const data = await request<{ token: string }>('/auth/login', {
@@ -143,4 +163,16 @@ export async function generateDiagrams(architectureId: string, projectName?: str
     method: 'POST',
     body: JSON.stringify({ architectureId, projectName }),
   });
+}
+
+// Export to storage
+export async function exportToStorage(projectId: string) {
+  return request<{ export: { storageProvider: string; key: string; sizeBytes: number } }>(
+    `/export/${projectId}`,
+    { method: 'POST' },
+  );
+}
+
+export async function getStoredExport(projectId: string): Promise<Blob> {
+  return requestBlob(`/export/${projectId}/latest`);
 }

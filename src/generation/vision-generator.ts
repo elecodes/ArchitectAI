@@ -66,6 +66,9 @@ export class VisionGenerator {
         ragChunksUsed: 0,
         retryCount: result.retryCount,
         truncated: false,
+        generationDurationMs: result.response.durationMs,
+        promptTokens: result.response.tokenCount.prompt,
+        completionTokens: result.response.tokenCount.completion,
       },
     };
   }

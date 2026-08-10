@@ -81,6 +81,9 @@ export class RiskGenerator {
         ragChunksUsed: 0,
         retryCount: result.retryCount,
         truncated: fitResult.truncated,
+        generationDurationMs: result.response.durationMs,
+        promptTokens: result.response.tokenCount.prompt,
+        completionTokens: result.response.tokenCount.completion,
       },
     };
   }
