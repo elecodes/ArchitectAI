@@ -101,6 +101,7 @@ STORAGE_LOCAL_DIR=./data/storage
 S3_BUCKET=                         # required when STORAGE_PROVIDER=s3
 S3_REGION=us-east-1
 S3_PREFIX=architectai
+S3_FORCE_PATH_STYLE=false             # 'true' for S3-compatible endpoints (LocalStack, MinIO)
 
 # --- CloudWatch telemetry (optional) ---
 CLOUDWATCH_ENABLED=false           # 'true' | 'false'
@@ -131,3 +132,37 @@ These remain in the roadmap under **v2.0.0 — AWS Deployment**. See `ROADMAP.md
 - `docs/aws/iam.md` — least-privilege IAM policy for the three services
 - `docs/aws/cost-safety.md` — budgets, cleanup, verification
 - `docs/adr/0015-optional-aws-integrations.md` — the decision record
+
+---
+
+## 6. LocalStack (test AWS locally, free)
+
+The same opt-in env vars can be pointed at **LocalStack** to exercise the S3 + CloudWatch paths locally — no AWS account, no spend. The AWS SDK connects to the local emulator instead of real AWS:
+
+```env
+AWS_ENDPOINT_URL=http://localhost:4566
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+AWS_REGION=us-east-1
+STORAGE_PROVIDER=s3
+S3_BUCKET=architectai-dev
+S3_FORCE_PATH_STYLE=true
+CLOUDWATCH_ENABLED=true
+```
+
+Keep `LLM_PROVIDER=local/mock` — LocalStack does **not** emulate Bedrock.
+
+### Versions
+
+- The **2026.x** images require a license/auth token (they exit with "License activation failed")
+- `3.8.1` S3 works, but CloudWatch fails — LocalStack's query-protocol parser can't handle the AWS SDK v3 JSON `X-Amz-Target` request style (HTTP 500 "Missing Action")
+- `4.13.1` verified working for **both S3 and CloudWatch**
+
+### Verification
+
+LocalStack storage is **ephemeral**: buckets and objects live inside the container and are lost on `docker compose down` / `rm`. Objects are only retrievable via the S3 API (`GetObject`) — the app's `GET /api/export/:projectId/latest` does exactly that:
+
+```bash
+awslocal s3 ls --recursive s3://architectai-dev
+awslocal cloudwatch list-metrics --namespace ArchitectAI
+```

@@ -56,6 +56,14 @@ No provisioned infrastructure: no RDS, ECS/Fargate, ECR, ALB, Route 53, auto-sca
 - `npm run lint` — clean
 - Frontend `npm run typecheck` — clean
 
+### LocalStack verification
+
+- S3 + CloudWatch flows verified **end-to-end** against **LocalStack 4.13.1** with **zero AWS spend** (`POST/GET /api/export/:projectId` export flow + CloudWatch telemetry sink).
+- Two defects found and fixed during verification:
+  1. `S3DocumentStore.listObjects` returned prefixed keys that `getObject` re-prefixed (double `architectai/architectai/...`), breaking `GET /api/export/:id/latest` — now returns keys relative to the store root, consistent with `LocalDocumentStore`.
+  2. Added opt-in `S3_FORCE_PATH_STYLE` because the SDK uses virtual-hosted addressing by default, which S3-compatible endpoints like LocalStack reject.
+- Container fix: local storage directory `/app/data` is created and owned by the `app` user in the Docker image, with a named volume for persistence (previously `EACCES` on export in the container).
+
 ## Security Review ✅
 
 - **No credentials in code/docs/tests.** Grep scan for `AKIA…`, `aws_secret_access_key`, `aws_access_key_id`, `sk-…` found only env-var *name* references in docs. `.env.example` ships AWS vars commented out and off.
