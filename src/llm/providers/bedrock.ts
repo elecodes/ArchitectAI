@@ -84,7 +84,7 @@ export class BedrockClient implements LLMClient {
     const start = Date.now();
 
     const body: Record<string, unknown> = { inputText: text };
-    if (this.config.embeddingDimensions) {
+    if (this.config.embeddingDimensions && this.config.embeddingModel?.includes('v2')) {
       body.dimensions = this.config.embeddingDimensions;
     }
 

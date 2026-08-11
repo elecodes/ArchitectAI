@@ -110,7 +110,7 @@ EMBEDDING_PROVIDER=bedrock
 
 BEDROCK_MODEL=anthropic.claude-3-5-sonnet-20240620-v1:0
 BEDROCK_REGION=us-east-1
-BEDROCK_EMBEDDING_MODEL=amazon.titan-embed-text-v2
+BEDROCK_EMBEDDING_MODEL=amazon.titan-embed-text-v1
 ```
 
 Credentials resolve through the AWS SDK default provider chain (IAM role, env, or shared config) — see `docs/aws/iam.md`.

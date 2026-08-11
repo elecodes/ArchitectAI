@@ -56,7 +56,7 @@ export const configSchema = z.object({
   bedrockModel: z.string().default('anthropic.claude-3-5-sonnet-20240620-v1:0'),
   bedrockRegion: z.string().default('us-east-1'),
   bedrockTimeoutMs: z.coerce.number().default(60000),
-  bedrockEmbeddingModel: z.string().default('amazon.titan-embed-text-v2'),
+  bedrockEmbeddingModel: z.string().default('amazon.titan-embed-text-v1'),
   bedrockEmbeddingDimensions: z.coerce.number().default(1536),
 
   // Artifact storage (local default, S3 optional)
@@ -114,6 +114,16 @@ export const configSchema = z.object({
         { path: ['databaseUrl'] },
         'DATABASE_URL does not set sslmode — Amazon RDS requires SSL in production',
       );
+    }
+  }
+  if (val.bedrockEmbeddingModel.includes('v2')) {
+    const v2Dimensions = [256, 512, 1024];
+    if (!v2Dimensions.includes(val.bedrockEmbeddingDimensions)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['bedrockEmbeddingDimensions'],
+        message: 'BEDROCK_EMBEDDING_DIMENSIONS must be 256, 512, or 1024 when using a Titan v2 embedding model',
+      });
     }
   }
 });
