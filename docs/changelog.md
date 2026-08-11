@@ -4,6 +4,39 @@ All notable changes to ArchitectAI are documented here.
 
 ---
 
+## v1.4.0 — Security & Production Hardening (2026-08-11)
+
+### New Features
+
+- **Production Health Probes** — `/api/health` now performs real checks (DB `SELECT 1`, generation + embedding `isHealthy`, storage `listObjects`, telemetry status) with 2s timeouts, aggregating to ok/degraded/error with HTTP 200/503 and never throwing
+- **Graceful Shutdown** — SIGTERM/SIGINT drain in-flight requests via `server.close()` within `GRACE_PERIOD_MS` (default 10000) before force-exiting
+- **Request Correlation IDs** — sanitized `X-Request-ID` in/out with a per-request child logger and a PII-free access log (method/path/status/duration only)
+- **Titan v1 Embedding Default Fix** — Bedrock embedding defaults to `amazon.titan-embed-text-v1` (native 1536 dims, matching `vector(1536)`); the `dimensions` parameter is sent only for v2 models, which are schema-constrained to 256/512/1024
+- **Docker HEALTHCHECK Fix** — probe rewritten with `node -e "fetch(...)"` because `node:20-slim` ships no `curl`; `--start-period=40s` added
+- **Dependabot** — `.github/dependabot.yml` covers root npm, the `frontend/` npm workspace, and GitHub Actions, all weekly
+
+### Configuration
+
+- `TRUST_PROXY`, `ALLOWED_FS_ROOTS`, `MAX_INDEX_FILES`, `GRACE_PERIOD_MS`, `BEDROCK_EMBEDDING_DIMENSIONS`, `RATE_LIMIT_EXPORT`, `RATE_LIMIT_INDEX`
+
+### Documentation
+
+- `docs/adr/0016-security-production-hardening.md` — Sprint 8 hardening decisions
+- `docs/security/sprint8-review.md` — consolidated security review (audit findings S1–S12, production-readiness gaps, residual risks, release checklist)
+- `docs/sprint8-audit.md` — phase-0 audit of security and database-readiness gaps
+- `docs/aws/secrets.md`, `docs/aws/networking.md`, `docs/aws/observability.md`, `docs/aws/cost-control.md`, `docs/aws/database-readiness.md` — new AWS ops docs; `docs/aws/iam.md` and `docs/aws/architecture.md` updated
+
+### Security
+
+- **Production environment gate** — `NODE_ENV=production` refuses to boot with mock LLM/embedding providers, rejects `JWT_SECRET` shorter than 32 characters or in the known-weak set, and warns when `DATABASE_URL` omits `sslmode`
+- **Path containment** — review and index routes resolve paths through `ALLOWED_FS_ROOTS` (failing closed to `process.cwd()` in production); escapes return `400 PATH_NOT_ALLOWED` (closes audit findings S1/S2)
+- **Artifact IDOR fix** — `getArtifact`/`listArtifacts` scope queries through the owning project; non-owned artifacts return 404, including before feedback upsert (closes S4)
+- **Dedicated export/index rate limits** — `exportLimiter` (10/min, `RATE_LIMIT_EXPORT`) and `indexLimiter` (5/min, `RATE_LIMIT_INDEX`); `MAX_INDEX_FILES` default 500 bounds embedding volume (mitigates S6)
+- **Error and log hygiene** — provider detail logged server-side only, generic client errors, query snippets truncated and whitespace-normalized, PII-free access log (closes S5/S9)
+- Rate limiting stays in-memory per-process — accepted residual risk for single-instance deployments (sprint8-review.md R1); Redis documented as the multi-instance remediation
+
+---
+
 ## v1.3.0 — AWS Foundation (2026-08-10)
 
 ### New Features
