@@ -8,7 +8,7 @@ ArchitectAI is an AI Software Architect that generates complete engineering pack
 
 ## Current Status
 
-**Version: 1.3.0** — AWS Foundation.
+**Version: 1.4.0** — Security & Production Hardening.
 
 ArchitectAI can today:
 
