@@ -6,6 +6,8 @@ import { createLLMClient } from '../../llm/factory.js';
 import { config } from '../../config/index.js';
 import { loadPrompts } from '../../prompts/loader.js';
 import { createChildLogger } from '../../logger.js';
+import { resolveFsPath, PathContainmentError } from '../../utils/path-safety.js';
+import type { RequestWithLog } from '../middleware/request-id.js';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -44,9 +46,28 @@ router.post('/review', authMiddleware, async (req: AuthenticatedRequest, res) =>
     return;
   }
 
+  let resolvedPath: string;
   try {
-    log.info({ path: input.data.path, userId: req.userId }, 'Starting repository review');
-    const result = await getPipeline().review(input.data);
+    resolvedPath = resolveFsPath(input.data.path);
+  } catch (err) {
+    if (err instanceof PathContainmentError) {
+      res
+        .status(400)
+        .json({ error: { code: 'PATH_NOT_ALLOWED', message: 'Path is outside the allowed root' } });
+      return;
+    }
+    throw err;
+  }
+
+  try {
+    log.info(
+      { path: resolvedPath.slice(0, 500), userId: req.userId, requestId: (req as RequestWithLog).requestId },
+      'Starting repository review',
+    );
+    const result = await getPipeline().review({
+      path: resolvedPath,
+      customIgnore: input.data.customIgnore,
+    });
 
     // Don't include full file contents in response (too large)
     const response = {
@@ -71,8 +92,13 @@ router.post('/review', authMiddleware, async (req: AuthenticatedRequest, res) =>
     );
     res.status(200).json(response);
   } catch (err) {
-    log.error({ err: (err as Error).message, path: input.data.path }, 'Review failed');
-    res.status(500).json({ error: { code: 'REVIEW_FAILED', message: (err as Error).message } });
+    log.error(
+      { err: (err as Error).message, requestId: (req as RequestWithLog).requestId },
+      'Review failed',
+    );
+    res
+      .status(500)
+      .json({ error: { code: 'REVIEW_FAILED', message: 'Review failed. Please try again.' } });
   }
 });
 

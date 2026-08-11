@@ -39,21 +39,29 @@ export async function createArtifact(data: {
   return mapRow(rows[0]);
 }
 
-export async function getArtifact(id: string): Promise<Artifact | null> {
+export async function getArtifact(id: string, userId: string): Promise<Artifact | null> {
   const pool = getPool();
-  const { rows } = await pool.query('SELECT * FROM artifacts WHERE id = $1', [id]);
+  const { rows } = await pool.query(
+    `SELECT a.* FROM artifacts a
+     JOIN projects p ON p.id = a.project_id
+     WHERE a.id = $1 AND p.owner_id = $2`,
+    [id, userId],
+  );
   return rows.length > 0 ? mapRow(rows[0]) : null;
 }
 
-export async function listArtifacts(projectId: string, type?: string): Promise<Artifact[]> {
+export async function listArtifacts(projectId: string, userId: string, type?: string): Promise<Artifact[]> {
   const pool = getPool();
-  let query = 'SELECT * FROM artifacts WHERE project_id = $1';
-  const params: unknown[] = [projectId];
+  let query =
+    `SELECT a.* FROM artifacts a
+     JOIN projects p ON p.id = a.project_id
+     WHERE a.project_id = $1 AND p.owner_id = $2`;
+  const params: unknown[] = [projectId, userId];
   if (type) {
-    query += ' AND type = $2';
+    query += ' AND a.type = $3';
     params.push(type);
   }
-  query += ' ORDER BY created_at DESC';
+  query += ' ORDER BY a.created_at DESC';
   const { rows } = await pool.query(query, params);
   return rows.map(mapRow);
 }

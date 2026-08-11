@@ -6,6 +6,7 @@ import { createDocumentStore } from '../../storage/factory.js';
 import { buildPackageZip, storeExportPackage } from '../../storage/export-service.js';
 import { config } from '../../config/index.js';
 import { createChildLogger } from '../../logger.js';
+import { exportLimiter } from '../middleware/rate-limiter.js';
 
 const log = createChildLogger('export-api');
 const router = Router();
@@ -15,7 +16,7 @@ function notFound(res: { status: (code: number) => { json: (body: unknown) => vo
 }
 
 // POST /api/export/:projectId — assemble + store the engineering package
-router.post('/:projectId', authMiddleware, async (req: AuthenticatedRequest, res, next) => {
+router.post('/:projectId', exportLimiter, authMiddleware, async (req: AuthenticatedRequest, res, next) => {
   try {
     const project = await projectRepo.getProject(String(req.params.projectId), req.userId!);
     if (!project) {
@@ -23,7 +24,7 @@ router.post('/:projectId', authMiddleware, async (req: AuthenticatedRequest, res
       return;
     }
 
-    const artifacts = await listArtifacts(project.id);
+    const artifacts = await listArtifacts(project.id, req.userId!);
     const zip = await buildPackageZip({
       projectName: project.name,
       description: project.description || undefined,

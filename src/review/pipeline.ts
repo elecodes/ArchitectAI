@@ -176,7 +176,8 @@ export class ReviewPipeline {
     }
 
     context += '\n# Key File Contents\n';
-    // Include important files (README, package.json, main entry, config)
+    // Include important files (README, package.json, main entry) — config files
+    // are excluded because they often contain secrets (API keys, endpoints).
     const keyFiles = repo.files
       .filter(
         (f) =>
@@ -185,9 +186,7 @@ export class ReviewPipeline {
           f.path.includes('index.ts') ||
           f.path.includes('index.js') ||
           f.path.includes('main.ts') ||
-          f.path.includes('app.ts') ||
-          f.path.endsWith('.config.ts') ||
-          f.path.endsWith('.config.js'),
+          f.path.includes('app.ts'),
       )
       .slice(0, 8);
 

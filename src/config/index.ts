@@ -15,6 +15,18 @@ export const configSchema = z.object({
   logLevel: z.string().default('info'),
   nodeEnv: z.string().default('development'),
   gracePeriodMs: z.coerce.number().default(10000),
+  trustProxy: z
+    .enum(['true', 'false'])
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
+
+  // Filesystem access (path containment for review/index routes)
+  allowedFsRoots: z
+    .string()
+    .default('')
+    .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean)),
+  maxIndexFiles: z.coerce.number().default(500),
 
   // Database
   databaseUrl: z.string().min(1, 'DATABASE_URL is required'),
@@ -115,6 +127,9 @@ function loadConfig(): Config {
     logLevel: process.env.LOG_LEVEL,
     nodeEnv: process.env.NODE_ENV,
     gracePeriodMs: process.env.GRACE_PERIOD_MS,
+    trustProxy: process.env.TRUST_PROXY,
+    allowedFsRoots: process.env.ALLOWED_FS_ROOTS,
+    maxIndexFiles: process.env.MAX_INDEX_FILES,
     databaseUrl: process.env.DATABASE_URL,
     jwtSecret: process.env.JWT_SECRET,
     llmProvider: process.env.LLM_PROVIDER,

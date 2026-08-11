@@ -43,11 +43,10 @@ export class OpenRouterClient implements LLMClient {
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
       if (response.status === 429) {
-        throw new Error(`OpenRouter rate limited. Retry after cooldown. Response: ${errorBody}`);
+        throw new Error('OpenRouter rate limited. Retry after cooldown.');
       }
-      throw new Error(`OpenRouter API error (${response.status}): ${errorBody}`);
+      throw new Error(`OpenRouter API error (${response.status})`);
     }
 
     const data = await response.json() as {
@@ -87,8 +86,7 @@ export class OpenRouterClient implements LLMClient {
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`OpenRouter embedding error (${response.status}): ${errorBody}`);
+      throw new Error(`OpenRouter embedding error (${response.status})`);
     }
 
     const data = await response.json() as {

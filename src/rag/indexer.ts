@@ -22,12 +22,12 @@ export class RAGIndexer {
     private readonly chunkTokenCount: number = 512,
   ) {}
 
-  async indexProject(projectId: string, rootDir: string): Promise<IndexResult> {
+  async indexProject(projectId: string, rootDir: string, maxFiles: number = 500): Promise<IndexResult> {
     const start = Date.now();
     const errors: { file: string; error: string }[] = [];
 
     // Parse files
-    const { files, skipped } = parseProjectFiles(rootDir);
+    const { files, skipped } = parseProjectFiles(rootDir, [], maxFiles);
     log.info({ files: files.length, skipped: skipped.length, projectId }, 'Starting indexing');
 
     // Delete existing chunks for this project (clean re-index)
