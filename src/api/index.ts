@@ -13,11 +13,13 @@ import { reviewRouter } from './routes/review.js';
 import { exportRouter } from './routes/export.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { generalLimiter, generationLimiter } from './middleware/rate-limiter.js';
+import { requestIdMiddleware } from './middleware/request-id.js';
 
 export function createApp() {
   const app = express();
 
   // Middleware
+  app.use(requestIdMiddleware);
   app.use(cors({ origin: 'http://localhost:3000' }));
   app.use(express.json({ limit: '1mb' }));
 

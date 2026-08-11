@@ -1,17 +1,20 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import { logger } from '../logger.js';
 
 dotenv.config();
 
 const LLM_PROVIDERS = ['openrouter', 'openai', 'ollama', 'mock', 'bedrock'] as const;
 const EMBEDDING_PROVIDERS = ['openai', 'openrouter', 'ollama', 'mock', 'bedrock'] as const;
 const STORAGE_PROVIDERS = ['local', 's3'] as const;
+const WEAK_JWT_SECRETS: string[] = ['dev-secret', 'secret', 'changeme'];
 
 export const configSchema = z.object({
   // Server
   port: z.coerce.number().default(3001),
   logLevel: z.string().default('info'),
   nodeEnv: z.string().default('development'),
+  gracePeriodMs: z.coerce.number().default(10000),
 
   // Database
   databaseUrl: z.string().min(1, 'DATABASE_URL is required'),
@@ -72,6 +75,35 @@ export const configSchema = z.object({
       message: 'S3_BUCKET is required when STORAGE_PROVIDER=s3',
     });
   }
+  if (val.nodeEnv === 'production') {
+    if (val.llmProvider === 'mock') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['llmProvider'],
+        message: 'LLM_PROVIDER=mock is not allowed in production',
+      });
+    }
+    if (val.embeddingProvider === 'mock') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['embeddingProvider'],
+        message: 'EMBEDDING_PROVIDER=mock is not allowed in production',
+      });
+    }
+    if (val.jwtSecret.length < 32 || WEAK_JWT_SECRETS.includes(val.jwtSecret)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['jwtSecret'],
+        message: 'JWT_SECRET must be at least 32 characters and not a known default in production',
+      });
+    }
+    if (!val.databaseUrl.includes('sslmode')) {
+      logger.warn(
+        { path: ['databaseUrl'] },
+        'DATABASE_URL does not set sslmode — Amazon RDS requires SSL in production',
+      );
+    }
+  }
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -82,6 +114,7 @@ function loadConfig(): Config {
     port: process.env.PORT,
     logLevel: process.env.LOG_LEVEL,
     nodeEnv: process.env.NODE_ENV,
+    gracePeriodMs: process.env.GRACE_PERIOD_MS,
     databaseUrl: process.env.DATABASE_URL,
     jwtSecret: process.env.JWT_SECRET,
     llmProvider: process.env.LLM_PROVIDER,

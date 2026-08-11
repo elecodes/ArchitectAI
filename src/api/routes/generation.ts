@@ -6,6 +6,7 @@ import { RAGRetriever } from '../../rag/retriever.js';
 import * as projectRepo from '../../db/repositories/project-repo.js';
 import * as artifactRepo from '../../db/repositories/artifact-repo.js';
 import { createLLMClient, createEmbeddingClient } from '../../llm/factory.js';
+import type { LLMClient } from '../../llm/interface.js';
 import { config } from '../../config/index.js';
 import { getPool } from '../../db/connection.js';
 import { loadPrompts } from '../../prompts/loader.js';
@@ -30,6 +31,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 let pipeline: GenerationPipeline | null = null;
 let retriever: RAGRetriever | null = null;
 let telemetry: TelemetryService | null = null;
+let llmClient: LLMClient | null = null;
+let embeddingClient: LLMClient | null = null;
 
 function getTelemetry(): TelemetryService {
   if (!telemetry) {
@@ -60,9 +63,23 @@ function recordFailure(module: string, errorCategory: string): void {
   );
 }
 
+export function getLLMClient(): LLMClient {
+  if (!llmClient) {
+    llmClient = createLLMClient(config);
+  }
+  return llmClient;
+}
+
+export function getEmbeddingClient(): LLMClient {
+  if (!embeddingClient) {
+    embeddingClient = createEmbeddingClient(config);
+  }
+  return embeddingClient;
+}
+
 function getPipeline(): GenerationPipeline {
   if (!pipeline) {
-    const llm = createLLMClient(config);
+    const llm = getLLMClient();
     const promptsDir = join(__dirname, '..', '..', 'prompts');
     const prompts = loadPrompts(promptsDir);
     pipeline = new GenerationPipeline(llm, prompts, config.llmModel, config.llmContextWindow);
@@ -72,7 +89,7 @@ function getPipeline(): GenerationPipeline {
 
 function getRetriever(): RAGRetriever {
   if (!retriever) {
-    const embeddingClient = createEmbeddingClient(config);
+    const embeddingClient = getEmbeddingClient();
     retriever = new RAGRetriever(getPool(), embeddingClient);
   }
   return retriever;

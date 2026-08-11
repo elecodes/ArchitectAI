@@ -36,11 +36,35 @@ async function boot(): Promise<void> {
   });
 
   // Graceful shutdown
-  const shutdown = async (signal: string) => {
-    log.info({ signal }, 'Shutting down...');
-    server.close();
-    await closePool();
-    process.exit(0);
+  const shutdown = (signal: string) => {
+    log.info(
+      { signal, gracePeriodMs: config.gracePeriodMs },
+      'Shutdown initiated: stopping new connections',
+    );
+    const forceExitTimer = setTimeout(() => {
+      log.warn(
+        { signal, gracePeriodMs: config.gracePeriodMs },
+        'Grace period elapsed: force exiting',
+      );
+      server.closeAllConnections();
+      process.exit(1);
+    }, config.gracePeriodMs);
+    forceExitTimer.unref();
+
+    server.close(() => {
+      clearTimeout(forceExitTimer);
+      log.info({ signal }, 'In-flight requests drained');
+      closePool()
+        .then(() => {
+          log.info('Shutdown complete');
+          process.exit(0);
+        })
+        .catch((err) => {
+          log.error({ err: (err as Error).message }, 'Failed to close database pool');
+          process.exit(1);
+        });
+    });
+    server.closeIdleConnections();
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
