@@ -6,4 +6,5 @@ tests
 docs
 coverage
 *.md
+data/
 !src/prompts/*.md

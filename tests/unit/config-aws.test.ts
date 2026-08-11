@@ -61,6 +61,7 @@ describe('config schema — AWS additions', () => {
       expect(parsed.data.bedrockModel).toBe('anthropic.claude-3-5-sonnet-20240620-v1:0');
       expect(parsed.data.bedrockRegion).toBe('us-east-1');
       expect(parsed.data.bedrockEmbeddingModel).toBe('amazon.titan-embed-text-v2');
+      expect(parsed.data.bedrockEmbeddingDimensions).toBe(1536);
     }
   });
 });

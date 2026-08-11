@@ -42,6 +42,7 @@ export const configSchema = z.object({
   bedrockRegion: z.string().default('us-east-1'),
   bedrockTimeoutMs: z.coerce.number().default(60000),
   bedrockEmbeddingModel: z.string().default('amazon.titan-embed-text-v2'),
+  bedrockEmbeddingDimensions: z.coerce.number().default(1536),
 
   // Artifact storage (local default, S3 optional)
   storageProvider: z.enum(STORAGE_PROVIDERS).default('local'),
@@ -96,6 +97,7 @@ function loadConfig(): Config {
     bedrockRegion: process.env.BEDROCK_REGION,
     bedrockTimeoutMs: process.env.BEDROCK_TIMEOUT_MS,
     bedrockEmbeddingModel: process.env.BEDROCK_EMBEDDING_MODEL,
+    bedrockEmbeddingDimensions: process.env.BEDROCK_EMBEDDING_DIMENSIONS,
     storageProvider: process.env.STORAGE_PROVIDER,
     storageLocalDir: process.env.STORAGE_LOCAL_DIR,
     s3Bucket: process.env.S3_BUCKET,

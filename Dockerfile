@@ -35,5 +35,5 @@ RUN mkdir -p /app/data && chown -R app:app /app/data
 
 USER app
 EXPOSE 3001
-HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD curl -f http://localhost:3001/api/health || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --start-period=40s --retries=3 CMD node -e "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "dist/index.js"]
