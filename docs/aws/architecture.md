@@ -38,7 +38,7 @@ A typical hybrid setup: keep the app local but point `LLM_PROVIDER=bedrock` for 
 
 - `src/llm/providers/bedrock.ts` — `BedrockClient implements LLMClient`
 - `complete()` uses the Claude **Messages** API (`anthropic.claude-3-5-sonnet-20240620-v1:0` by default)
-- `embed()` uses Amazon Titan (`amazon.titan-embed-text-v2` by default)
+- `embed()` uses Amazon Titan (`amazon.titan-embed-text-v1` by default — 1536-dimension output matching the `vector(1536)` column; the opt-in `amazon.titan-embed-text-v2:0` sends an explicit `dimensions` field of 256/512/1024 and requires a column migration)
 - `isHealthy()` resolves credentials via the SDK default provider chain **without making a billed API call** — a cheap config-resolution check
 - Factory: `LLM_PROVIDER=bedrock` and `EMBEDDING_PROVIDER=bedrock` are wired in `src/llm/factory.ts`
 
@@ -93,7 +93,7 @@ BEDROCK_REGION=us-east-1
 BEDROCK_TIMEOUT_MS=60000
 
 EMBEDDING_PROVIDER=openai          # add 'bedrock'
-BEDROCK_EMBEDDING_MODEL=amazon.titan-embed-text-v2
+BEDROCK_EMBEDDING_MODEL=amazon.titan-embed-text-v1
 
 # --- S3 storage (optional) ---
 STORAGE_PROVIDER=local             # local | s3

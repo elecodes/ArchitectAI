@@ -6,10 +6,12 @@ import { RAGRetriever } from '../../rag/retriever.js';
 import * as projectRepo from '../../db/repositories/project-repo.js';
 import * as artifactRepo from '../../db/repositories/artifact-repo.js';
 import { createLLMClient, createEmbeddingClient } from '../../llm/factory.js';
+import type { LLMClient } from '../../llm/interface.js';
 import { config } from '../../config/index.js';
 import { getPool } from '../../db/connection.js';
 import { loadPrompts } from '../../prompts/loader.js';
 import { createChildLogger } from '../../logger.js';
+import type { RequestWithLog } from '../middleware/request-id.js';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Specification, ArchitectureDocument } from '../../generation/schemas.js';
@@ -30,6 +32,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 let pipeline: GenerationPipeline | null = null;
 let retriever: RAGRetriever | null = null;
 let telemetry: TelemetryService | null = null;
+let llmClient: LLMClient | null = null;
+let embeddingClient: LLMClient | null = null;
 
 function getTelemetry(): TelemetryService {
   if (!telemetry) {
@@ -60,9 +64,23 @@ function recordFailure(module: string, errorCategory: string): void {
   );
 }
 
+export function getLLMClient(): LLMClient {
+  if (!llmClient) {
+    llmClient = createLLMClient(config);
+  }
+  return llmClient;
+}
+
+export function getEmbeddingClient(): LLMClient {
+  if (!embeddingClient) {
+    embeddingClient = createEmbeddingClient(config);
+  }
+  return embeddingClient;
+}
+
 function getPipeline(): GenerationPipeline {
   if (!pipeline) {
-    const llm = createLLMClient(config);
+    const llm = getLLMClient();
     const promptsDir = join(__dirname, '..', '..', 'prompts');
     const prompts = loadPrompts(promptsDir);
     pipeline = new GenerationPipeline(llm, prompts, config.llmModel, config.llmContextWindow);
@@ -72,7 +90,7 @@ function getPipeline(): GenerationPipeline {
 
 function getRetriever(): RAGRetriever {
   if (!retriever) {
-    const embeddingClient = createEmbeddingClient(config);
+    const embeddingClient = getEmbeddingClient();
     retriever = new RAGRetriever(getPool(), embeddingClient);
   }
   return retriever;
@@ -153,7 +171,7 @@ router.post('/specs', authMiddleware, async (req: AuthenticatedRequest, res) => 
       'Specification generation failed',
     );
     recordFailure('spec', 'generation_error');
-    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
+    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: 'Generation failed. Please try again.' } });
   }
 });
 
@@ -177,7 +195,7 @@ router.post('/architecture', authMiddleware, async (req: AuthenticatedRequest, r
   }
 
   try {
-    const specArtifact = await artifactRepo.getArtifact(input.data.specificationId);
+    const specArtifact = await artifactRepo.getArtifact(input.data.specificationId, req.userId!);
     if (!specArtifact || specArtifact.type !== 'specification') {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Specification not found' } });
       return;
@@ -221,9 +239,9 @@ router.post('/architecture', authMiddleware, async (req: AuthenticatedRequest, r
     });
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
-    log.error({ err: (err as Error).message }, 'Architecture generation failed');
+    log.error({ err: (err as Error).message, requestId: (req as RequestWithLog).requestId }, 'Architecture generation failed');
     recordFailure('architecture', 'generation_error');
-    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
+    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: 'Generation failed. Please try again.' } });
   }
 });
 
@@ -247,7 +265,7 @@ router.post('/tasks', authMiddleware, async (req: AuthenticatedRequest, res) => 
   }
 
   try {
-    const archArtifact = await artifactRepo.getArtifact(input.data.architectureId);
+    const archArtifact = await artifactRepo.getArtifact(input.data.architectureId, req.userId!);
     if (!archArtifact || archArtifact.type !== 'architecture') {
       res
         .status(404)
@@ -283,9 +301,9 @@ router.post('/tasks', authMiddleware, async (req: AuthenticatedRequest, res) => 
     });
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
-    log.error({ err: (err as Error).message }, 'Task generation failed');
+    log.error({ err: (err as Error).message, requestId: (req as RequestWithLog).requestId }, 'Task generation failed');
     recordFailure('tasks', 'generation_error');
-    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
+    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: 'Generation failed. Please try again.' } });
   }
 });
 
@@ -320,7 +338,7 @@ router.post('/vision', authMiddleware, async (req: AuthenticatedRequest, res) =>
     // Get spec if provided
     let spec: Specification | undefined;
     if (input.data.specificationId) {
-      const specArtifact = await artifactRepo.getArtifact(input.data.specificationId);
+      const specArtifact = await artifactRepo.getArtifact(input.data.specificationId, req.userId!);
       if (specArtifact) spec = specArtifact.content as unknown as Specification;
     }
 
@@ -353,9 +371,9 @@ router.post('/vision', authMiddleware, async (req: AuthenticatedRequest, res) =>
 
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
-    log.error({ err: (err as Error).message }, 'Vision generation failed');
+    log.error({ err: (err as Error).message, requestId: (req as RequestWithLog).requestId }, 'Vision generation failed');
     recordFailure('vision', 'generation_error');
-    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
+    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: 'Generation failed. Please try again.' } });
   }
 });
 
@@ -380,13 +398,13 @@ router.post('/risks', authMiddleware, async (req: AuthenticatedRequest, res) => 
   }
 
   try {
-    const specArtifact = await artifactRepo.getArtifact(input.data.specificationId);
+    const specArtifact = await artifactRepo.getArtifact(input.data.specificationId, req.userId!);
     if (!specArtifact || specArtifact.type !== 'specification') {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Specification not found' } });
       return;
     }
 
-    const archArtifact = await artifactRepo.getArtifact(input.data.architectureId);
+    const archArtifact = await artifactRepo.getArtifact(input.data.architectureId, req.userId!);
     if (!archArtifact || archArtifact.type !== 'architecture') {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Architecture not found' } });
       return;
@@ -424,9 +442,9 @@ router.post('/risks', authMiddleware, async (req: AuthenticatedRequest, res) => 
 
     res.status(201).json({ artifact, provenance: result.provenance });
   } catch (err) {
-    log.error({ err: (err as Error).message }, 'Risk assessment failed');
+    log.error({ err: (err as Error).message, requestId: (req as RequestWithLog).requestId }, 'Risk assessment failed');
     recordFailure('risks', 'generation_error');
-    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
+    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: 'Generation failed. Please try again.' } });
   }
 });
 
@@ -451,7 +469,7 @@ router.post('/diagrams', authMiddleware, async (req: AuthenticatedRequest, res) 
   }
 
   try {
-    const archArtifact = await artifactRepo.getArtifact(input.data.architectureId);
+    const archArtifact = await artifactRepo.getArtifact(input.data.architectureId, req.userId!);
     if (!archArtifact || archArtifact.type !== 'architecture') {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Architecture not found' } });
       return;
@@ -501,9 +519,9 @@ router.post('/diagrams', authMiddleware, async (req: AuthenticatedRequest, res) 
 
     res.status(201).json({ artifact, diagrams, validation });
   } catch (err) {
-    log.error({ err: (err as Error).message }, 'Diagram generation failed');
+    log.error({ err: (err as Error).message, requestId: (req as RequestWithLog).requestId }, 'Diagram generation failed');
     recordFailure('diagrams', 'generation_error');
-    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: (err as Error).message } });
+    res.status(500).json({ error: { code: 'GENERATION_FAILED', message: 'Generation failed. Please try again.' } });
   }
 });
 

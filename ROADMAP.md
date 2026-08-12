@@ -42,7 +42,19 @@ Optional, opt-in AWS integrations that preserve the local-first default.
 
 ---
 
-### v1.4.0 — Architecture Improvements
+### v1.4.0 — Security & Production Hardening ✅ delivered
+
+Production hardening for AWS operations: security fixes, real health checks, and release automation.
+
+- Security hardening: production env gate, path containment, artifact IDOR fix, dedicated export/index rate limits, request correlation IDs
+- Real `/api/health` probes (DB/LLM/storage/telemetry) and graceful shutdown
+- Bedrock embedding default fixed to Titan v1 (1536 dims, matching `vector(1536)`)
+- AWS ops docs (`docs/aws/*`) + security review (`docs/security/sprint8-review.md`)
+- Docker HEALTHCHECK fix and Dependabot (root npm, frontend, github-actions)
+
+---
+
+### v1.5.0 — Architecture Improvements
 
 Enhance the core generation quality and output richness.
 
@@ -54,7 +66,7 @@ Enhance the core generation quality and output richness.
 
 ---
 
-### v1.5.0 — Prompt Version Analytics
+### v1.6.0 — Prompt Version Analytics
 
 Data-driven prompt improvement using telemetry and feedback.
 

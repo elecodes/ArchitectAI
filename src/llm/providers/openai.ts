@@ -43,14 +43,13 @@ export class OpenAIClient implements LLMClient {
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
       if (response.status === 429) {
-        throw new Error(`OpenAI rate limited. Response: ${errorBody}`);
+        throw new Error('OpenAI rate limited. Please retry later.');
       }
       if (response.status === 401) {
         throw new Error('OpenAI authentication failed. Check your API key.');
       }
-      throw new Error(`OpenAI API error (${response.status}): ${errorBody}`);
+      throw new Error(`OpenAI API error (${response.status})`);
     }
 
     const data = await response.json() as {
@@ -96,8 +95,7 @@ export class OpenAIClient implements LLMClient {
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`OpenAI embedding error (${response.status}): ${errorBody}`);
+      throw new Error(`OpenAI embedding error (${response.status})`);
     }
 
     const data = await response.json() as {

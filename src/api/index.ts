@@ -13,11 +13,17 @@ import { reviewRouter } from './routes/review.js';
 import { exportRouter } from './routes/export.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { generalLimiter, generationLimiter } from './middleware/rate-limiter.js';
+import { requestIdMiddleware } from './middleware/request-id.js';
+import { config } from '../config/index.js';
 
 export function createApp() {
   const app = express();
 
+  // Trust proxy when behind a reverse proxy (ELB) so rate limiting sees the real client IP
+  app.set('trust proxy', config.trustProxy);
+
   // Middleware
+  app.use(requestIdMiddleware);
   app.use(cors({ origin: 'http://localhost:3000' }));
   app.use(express.json({ limit: '1mb' }));
 

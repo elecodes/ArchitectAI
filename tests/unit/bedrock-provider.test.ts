@@ -81,6 +81,35 @@ describe('BedrockClient', () => {
     expect(JSON.parse(decoder.decode(command.input.body))).toEqual({ inputText: 'text' });
   });
 
+  it('does not send dimensions for Titan v1 (native 1536 output)', async () => {
+    sendMock.mockResolvedValue(bedrockBody({ embedding: [0.1, 0.2, 0.3] }));
+    const client = new BedrockClient({
+      model: 'm',
+      embeddingModel: 'amazon.titan-embed-text-v1',
+      embeddingDimensions: 1536,
+    });
+    await client.embed('text');
+
+    const command = sendMock.mock.calls[0][0];
+    expect(JSON.parse(decoder.decode(command.input.body))).toEqual({ inputText: 'text' });
+  });
+
+  it('includes the configured embedding dimensions for a Titan v2 request', async () => {
+    sendMock.mockResolvedValue(bedrockBody({ embedding: [0.1, 0.2, 0.3] }));
+    const client = new BedrockClient({
+      model: 'm',
+      embeddingModel: 'amazon.titan-embed-text-v2:0',
+      embeddingDimensions: 1024,
+    });
+    await client.embed('text');
+
+    const command = sendMock.mock.calls[0][0];
+    expect(JSON.parse(decoder.decode(command.input.body))).toEqual({
+      inputText: 'text',
+      dimensions: 1024,
+    });
+  });
+
   it('throws when the embedding response has no vector', async () => {
     sendMock.mockResolvedValue(bedrockBody({}));
     const client = new BedrockClient({ model: 'm' });

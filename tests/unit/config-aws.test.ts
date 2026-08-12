@@ -60,7 +60,26 @@ describe('config schema — AWS additions', () => {
     if (parsed.success) {
       expect(parsed.data.bedrockModel).toBe('anthropic.claude-3-5-sonnet-20240620-v1:0');
       expect(parsed.data.bedrockRegion).toBe('us-east-1');
-      expect(parsed.data.bedrockEmbeddingModel).toBe('amazon.titan-embed-text-v2');
+      expect(parsed.data.bedrockEmbeddingModel).toBe('amazon.titan-embed-text-v1');
+      expect(parsed.data.bedrockEmbeddingDimensions).toBe(1536);
     }
+  });
+
+  it('accepts valid v2 embedding dimensions', () => {
+    const parsed = configSchema.safeParse({
+      ...base,
+      bedrockEmbeddingModel: 'amazon.titan-embed-text-v2:0',
+      bedrockEmbeddingDimensions: '1024',
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('rejects invalid v2 embedding dimensions (1536 is not supported by Titan v2)', () => {
+    const parsed = configSchema.safeParse({
+      ...base,
+      bedrockEmbeddingModel: 'amazon.titan-embed-text-v2:0',
+      bedrockEmbeddingDimensions: '1536',
+    });
+    expect(parsed.success).toBe(false);
   });
 });

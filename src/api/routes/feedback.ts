@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authMiddleware, type AuthenticatedRequest } from '../middleware/auth.js';
 import { getPool } from '../../db/connection.js';
+import { getArtifact } from '../../db/repositories/artifact-repo.js';
 import { createChildLogger } from '../../logger.js';
 
 const log = createChildLogger('feedback-api');
@@ -21,6 +22,12 @@ router.post('/:id/feedback', authMiddleware, async (req: AuthenticatedRequest, r
     }
 
     const pool = getPool();
+
+    const artifact = await getArtifact(req.params.id as string, req.userId!);
+    if (!artifact) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Artifact not found' } });
+      return;
+    }
 
     // Upsert: one feedback per user per artifact
     await pool.query(

@@ -9,6 +9,7 @@ export interface BedrockConfig {
   region?: string;
   timeoutMs?: number;
   embeddingModel?: string;
+  embeddingDimensions?: number;
 }
 
 interface BedrockClaudeResponse {
@@ -82,11 +83,16 @@ export class BedrockClient implements LLMClient {
   async embed(text: string): Promise<EmbeddingResponse> {
     const start = Date.now();
 
+    const body: Record<string, unknown> = { inputText: text };
+    if (this.config.embeddingDimensions && this.config.embeddingModel?.includes('v2')) {
+      body.dimensions = this.config.embeddingDimensions;
+    }
+
     const command = new InvokeModelCommand({
       modelId: this.config.embeddingModel || 'amazon.titan-embed-text-v2',
       contentType: 'application/json',
       accept: 'application/json',
-      body: new TextEncoder().encode(JSON.stringify({ inputText: text })),
+      body: new TextEncoder().encode(JSON.stringify(body)),
     });
 
     const response = await this.client.send(command, {

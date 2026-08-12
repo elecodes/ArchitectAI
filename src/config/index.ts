@@ -1,17 +1,32 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import { logger } from '../logger.js';
 
 dotenv.config();
 
 const LLM_PROVIDERS = ['openrouter', 'openai', 'ollama', 'mock', 'bedrock'] as const;
 const EMBEDDING_PROVIDERS = ['openai', 'openrouter', 'ollama', 'mock', 'bedrock'] as const;
 const STORAGE_PROVIDERS = ['local', 's3'] as const;
+const WEAK_JWT_SECRETS: string[] = ['dev-secret', 'secret', 'changeme'];
 
 export const configSchema = z.object({
   // Server
   port: z.coerce.number().default(3001),
   logLevel: z.string().default('info'),
   nodeEnv: z.string().default('development'),
+  gracePeriodMs: z.coerce.number().default(10000),
+  trustProxy: z
+    .enum(['true', 'false'])
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
+
+  // Filesystem access (path containment for review/index routes)
+  allowedFsRoots: z
+    .string()
+    .default('')
+    .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean)),
+  maxIndexFiles: z.coerce.number().default(500),
 
   // Database
   databaseUrl: z.string().min(1, 'DATABASE_URL is required'),
@@ -41,7 +56,8 @@ export const configSchema = z.object({
   bedrockModel: z.string().default('anthropic.claude-3-5-sonnet-20240620-v1:0'),
   bedrockRegion: z.string().default('us-east-1'),
   bedrockTimeoutMs: z.coerce.number().default(60000),
-  bedrockEmbeddingModel: z.string().default('amazon.titan-embed-text-v2'),
+  bedrockEmbeddingModel: z.string().default('amazon.titan-embed-text-v1'),
+  bedrockEmbeddingDimensions: z.coerce.number().default(1536),
 
   // Artifact storage (local default, S3 optional)
   storageProvider: z.enum(STORAGE_PROVIDERS).default('local'),
@@ -71,6 +87,45 @@ export const configSchema = z.object({
       message: 'S3_BUCKET is required when STORAGE_PROVIDER=s3',
     });
   }
+  if (val.nodeEnv === 'production') {
+    if (val.llmProvider === 'mock') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['llmProvider'],
+        message: 'LLM_PROVIDER=mock is not allowed in production',
+      });
+    }
+    if (val.embeddingProvider === 'mock') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['embeddingProvider'],
+        message: 'EMBEDDING_PROVIDER=mock is not allowed in production',
+      });
+    }
+    if (val.jwtSecret.length < 32 || WEAK_JWT_SECRETS.includes(val.jwtSecret)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['jwtSecret'],
+        message: 'JWT_SECRET must be at least 32 characters and not a known default in production',
+      });
+    }
+    if (!val.databaseUrl.includes('sslmode')) {
+      logger.warn(
+        { path: ['databaseUrl'] },
+        'DATABASE_URL does not set sslmode — Amazon RDS requires SSL in production',
+      );
+    }
+  }
+  if (val.bedrockEmbeddingModel.includes('v2')) {
+    const v2Dimensions = [256, 512, 1024];
+    if (!v2Dimensions.includes(val.bedrockEmbeddingDimensions)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['bedrockEmbeddingDimensions'],
+        message: 'BEDROCK_EMBEDDING_DIMENSIONS must be 256, 512, or 1024 when using a Titan v2 embedding model',
+      });
+    }
+  }
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -81,6 +136,10 @@ function loadConfig(): Config {
     port: process.env.PORT,
     logLevel: process.env.LOG_LEVEL,
     nodeEnv: process.env.NODE_ENV,
+    gracePeriodMs: process.env.GRACE_PERIOD_MS,
+    trustProxy: process.env.TRUST_PROXY,
+    allowedFsRoots: process.env.ALLOWED_FS_ROOTS,
+    maxIndexFiles: process.env.MAX_INDEX_FILES,
     databaseUrl: process.env.DATABASE_URL,
     jwtSecret: process.env.JWT_SECRET,
     llmProvider: process.env.LLM_PROVIDER,
@@ -96,6 +155,7 @@ function loadConfig(): Config {
     bedrockRegion: process.env.BEDROCK_REGION,
     bedrockTimeoutMs: process.env.BEDROCK_TIMEOUT_MS,
     bedrockEmbeddingModel: process.env.BEDROCK_EMBEDDING_MODEL,
+    bedrockEmbeddingDimensions: process.env.BEDROCK_EMBEDDING_DIMENSIONS,
     storageProvider: process.env.STORAGE_PROVIDER,
     storageLocalDir: process.env.STORAGE_LOCAL_DIR,
     s3Bucket: process.env.S3_BUCKET,

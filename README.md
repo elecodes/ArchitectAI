@@ -8,7 +8,7 @@ ArchitectAI is an AI Software Architect that generates complete engineering pack
 
 ## Current Status
 
-**Version: 1.3.0** — AWS Foundation.
+**Version: 1.4.0** — Security & Production Hardening.
 
 ArchitectAI can today:
 
@@ -81,6 +81,13 @@ Default login: `admin` / `architect`
 | `DATABASE_URL`       | Yes       | (set in compose)            | PostgreSQL connection            |
 | `STORAGE_PROVIDER`   | No        | local                       | local, s3                        |
 | `CLOUDWATCH_ENABLED` | No        | false                       | Mirror telemetry to CloudWatch   |
+| `TRUST_PROXY`        | No        | false                       | Trust reverse proxy (ALB/ELB) for client IPs in rate limiting |
+| `ALLOWED_FS_ROOTS`   | No        | —                           | CSV of allowed filesystem roots for review/index routes (production fails closed to `process.cwd()`) |
+| `MAX_INDEX_FILES`    | No        | 500                         | Max files indexed per project    |
+| `GRACE_PERIOD_MS`    | No        | 10000                       | Graceful shutdown drain window (ms) |
+| `BEDROCK_EMBEDDING_DIMENSIONS` | No        | 1536                 | Embedding dimensions (Titan v2 models require 256, 512, or 1024) |
+| `RATE_LIMIT_EXPORT`  | No        | 10                          | Export endpoint rate limit (req/min) |
+| `RATE_LIMIT_INDEX`   | No        | 5                           | Index endpoint rate limit (req/min) |
 
 See `.env.example` for the full set (Bedrock models/region, S3 bucket/prefix, CloudWatch region/namespace). AWS credentials are never configured here — they come from the AWS SDK default credential provider chain.
 
@@ -110,7 +117,7 @@ EMBEDDING_PROVIDER=bedrock
 
 BEDROCK_MODEL=anthropic.claude-3-5-sonnet-20240620-v1:0
 BEDROCK_REGION=us-east-1
-BEDROCK_EMBEDDING_MODEL=amazon.titan-embed-text-v2
+BEDROCK_EMBEDDING_MODEL=amazon.titan-embed-text-v1
 ```
 
 Credentials resolve through the AWS SDK default provider chain (IAM role, env, or shared config) — see `docs/aws/iam.md`.

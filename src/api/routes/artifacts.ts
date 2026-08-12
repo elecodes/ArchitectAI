@@ -8,7 +8,7 @@ const router = Router();
 
 router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    const artifact = await artifactRepo.getArtifact(req.params.id as string);
+    const artifact = await artifactRepo.getArtifact(req.params.id as string, req.userId!);
     if (!artifact) {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Artifact not found' } });
       return;

@@ -80,6 +80,7 @@ export function createEmbeddingClient(config: Config): LLMClient {
         region: config.bedrockRegion,
         timeoutMs: config.bedrockTimeoutMs,
         embeddingModel: config.bedrockEmbeddingModel,
+        embeddingDimensions: config.bedrockEmbeddingDimensions,
       });
     default:
       throw new Error(`Unknown embedding provider: "${config.embeddingProvider}"`);

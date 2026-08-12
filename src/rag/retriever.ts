@@ -53,7 +53,7 @@ export class RAGRetriever {
     }));
 
     log.info({
-      query: query.slice(0, 100),
+      query: query.slice(0, 100).replace(/\s+/g, ' ').trim(),
       projectId,
       results: chunks.length,
       topSimilarity: chunks[0]?.similarity,

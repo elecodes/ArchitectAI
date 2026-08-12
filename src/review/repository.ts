@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, extname, relative } from 'node:path';
 import { createChildLogger } from '../logger.js';
+import { DEFAULT_IGNORE_PATTERNS, matchesPattern, matchesIgnore } from '../rag/file-parser.js';
 
 const log = createChildLogger('repository');
 
@@ -92,7 +93,14 @@ export function importRepository(rootDir: string, customIgnore: string[] = []): 
 
       // Skip ignored directories
       if (DEFAULT_IGNORE_DIRS.has(entry)) continue;
-      if (ignorePatterns.some((p) => relativePath.includes(p) || entry === p)) {
+
+      // Check default security patterns FIRST
+      if (DEFAULT_IGNORE_PATTERNS.some((p) => matchesPattern(relativePath, p))) {
+        skipped.push({ path: relativePath, reason: 'security: matches default sensitive pattern' });
+        continue;
+      }
+
+      if (ignorePatterns.some((p) => matchesIgnore(relativePath, p))) {
         skipped.push({ path: relativePath, reason: 'ignored' });
         continue;
       }

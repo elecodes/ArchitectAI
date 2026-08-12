@@ -1,0 +1,40 @@
+name: Sprint 8 Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+env:
+  COMPOSE_PROJECT_NAME: architectai
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare CI .env
+        run: |
+          cat > .env <<'EOF'
+          PORT=3001
+          NODE_ENV=development
+          LOG_LEVEL=info
+          LLM_PROVIDER=mock
+          EMBEDDING_PROVIDER=mock
+          JWT_SECRET=ci-smoke-secret-0123456789abcdef0123456789abcdef
+          EOF
+
+      - name: Run Sprint 8 smoke
+        run: ./scripts/smoke-sprint8.sh --keep
+
+      - name: Dump prod logs on failure
+        if: failure()
+        run: |
+          docker logs architectai-smoke --tail 80 2>&1 || true
+          docker compose logs app --tail 80 2>&1 || true

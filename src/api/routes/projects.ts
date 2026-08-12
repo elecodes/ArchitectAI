@@ -7,6 +7,9 @@ import { createEmbeddingClient } from '../../llm/factory.js';
 import { config } from '../../config/index.js';
 import { getPool } from '../../db/connection.js';
 import { createChildLogger } from '../../logger.js';
+import { resolveFsPath, PathContainmentError } from '../../utils/path-safety.js';
+import { indexLimiter } from '../middleware/rate-limiter.js';
+import type { RequestWithLog } from '../middleware/request-id.js';
 
 const log = createChildLogger('projects-api');
 const router = Router();
@@ -73,7 +76,7 @@ router.delete('/:id', authMiddleware, async (req: AuthenticatedRequest, res) => 
   }
 });
 
-router.post('/:id/index', authMiddleware, async (req: AuthenticatedRequest, res) => {
+router.post('/:id/index', indexLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
     const project = await projectRepo.getProject(req.params.id as string, req.userId!);
     if (!project) {
@@ -87,14 +90,33 @@ router.post('/:id/index', authMiddleware, async (req: AuthenticatedRequest, res)
       return;
     }
 
+    let resolvedPath: string;
+    try {
+      resolvedPath = resolveFsPath(input.data.path);
+    } catch (err) {
+      if (err instanceof PathContainmentError) {
+        res
+          .status(400)
+          .json({ error: { code: 'PATH_NOT_ALLOWED', message: 'Path is outside the allowed root' } });
+        return;
+      }
+      throw err;
+    }
+
     const embeddingClient = createEmbeddingClient(config);
     const indexer = new RAGIndexer(getPool(), embeddingClient);
-    const result = await indexer.indexProject(project.id, input.data.path);
+    const result = await indexer.indexProject(project.id, resolvedPath, config.maxIndexFiles);
 
-    log.info({ projectId: project.id, ...result }, 'Project indexed');
+    log.info(
+      { projectId: project.id, requestId: (req as RequestWithLog).requestId, ...result },
+      'Project indexed',
+    );
     res.json(result);
   } catch (err) {
-    log.error({ err: (err as Error).message }, 'Failed to index project');
+    log.error(
+      { err: (err as Error).message, requestId: (req as RequestWithLog).requestId },
+      'Failed to index project',
+    );
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to index project' } });
   }
 });

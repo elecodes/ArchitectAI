@@ -12,7 +12,7 @@ const SUPPORTED_EXTENSIONS = new Set([
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '.next', '__pycache__']);
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
 
-const DEFAULT_IGNORE_PATTERNS = [
+export const DEFAULT_IGNORE_PATTERNS = [
   '.env',
   '.env.*',
   '*.key',
@@ -43,7 +43,7 @@ export interface ParseResult {
  * Check if a file path matches a simple glob pattern.
  * Supports: *.ext, prefix.*, exact match, directory/ prefix.
  */
-function matchesPattern(relativePath: string, pattern: string): boolean {
+export function matchesPattern(relativePath: string, pattern: string): boolean {
   const fileName = basename(relativePath);
 
   // Directory pattern (e.g., '.aws/')
@@ -69,7 +69,22 @@ function matchesPattern(relativePath: string, pattern: string): boolean {
   return fileName === pattern;
 }
 
-export function parseProjectFiles(rootDir: string, ignorePatterns: string[] = []): ParseResult {
+/**
+ * User-supplied ignore pattern matcher. Glob-aware via matchesPattern, with a
+ * fallback so a plain directory name (e.g. "build") also matches any path
+ * segment instead of only files named exactly "build".
+ */
+export function matchesIgnore(relativePath: string, pattern: string): boolean {
+  if (matchesPattern(relativePath, pattern)) return true;
+  const normalized = pattern.replace(/\/+$/, '');
+  return normalized.split('/').length === 1 && relativePath.split('/').includes(normalized);
+}
+
+export function parseProjectFiles(
+  rootDir: string,
+  ignorePatterns: string[] = [],
+  maxFiles: number = 500,
+): ParseResult {
   const files: ParsedFile[] = [];
   const skipped: { path: string; reason: string }[] = [];
 
@@ -90,6 +105,7 @@ export function parseProjectFiles(rootDir: string, ignorePatterns: string[] = []
     }
 
     for (const entry of entries) {
+      if (files.length >= maxFiles) return;
       const fullPath = join(dir, entry);
       const relativePath = relative(rootDir, fullPath);
 
@@ -104,7 +120,7 @@ export function parseProjectFiles(rootDir: string, ignorePatterns: string[] = []
       }
 
       // Check user-provided ignore patterns
-      if (ignorePatterns.some(p => relativePath.includes(p))) {
+      if (ignorePatterns.some(p => matchesIgnore(relativePath, p))) {
         skipped.push({ path: relativePath, reason: 'matched ignore pattern' });
         continue;
       }
