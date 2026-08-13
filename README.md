@@ -8,13 +8,13 @@ ArchitectAI is an AI Software Architect that generates complete engineering pack
 
 ## Current Status
 
-**Version: 1.4.0** — Security & Production Hardening.
+**Version: 1.5.0** — Agentic AI.
 
 ArchitectAI can today:
 
 - Accept a natural language description of a software project
-- Run a 6-stage generation pipeline: Product Vision → Requirements → Architecture → Diagrams → Tasks → Risk Assessment
-- Generate structured requirements, architecture documents, and implementation task breakdowns with dependency DAGs
+- Run a multi-agent generation pipeline: 7 typed agents coordinated by a lightweight orchestrator
+- Generate structured requirements, architecture documents, security reviews, cost estimates, and implementation task breakdowns
 - Render C4-style Mermaid diagrams (component, container, data flow, context) with SVG/PNG export
 - Export a complete engineering package as a .zip file (client-side) or to a configured storage provider (local filesystem or S3)
 - Work with OpenRouter, OpenAI, Ollama, Bedrock, or a mock provider
@@ -35,6 +35,10 @@ See [ROADMAP.md](ROADMAP.md) for planned features.
 - **Provider Agnostic** — OpenRouter, OpenAI, Ollama, AWS Bedrock, or mock
 - **RAG-Enhanced** — Index your project files for context-aware generation
 - **Telemetry** — Per-generation metrics to Postgres, optionally mirrored to CloudWatch
+
+### Agent System (v1.5.0)
+
+Seven typed agents replace the monolithic generation pipeline. Each agent has explicit Zod input/output schemas, a capability whitelist, and a versioned prompt. The `AgentRunner` provides shared infrastructure (RAG, context window fitting, validation retry, timeout, telemetry). A lightweight orchestrator coordinates execution with one parallel fork (Security ∥ Cloud/Cost after Architecture). The capability model enforces OWASP LLM06 Excessive Agency — agents cannot access resources they haven't declared. See `docs/adr/0017` through `0021` for design decisions.
 
 ## Optional AWS Mode
 
@@ -199,6 +203,7 @@ src/                    # Backend
 ├── llm/               # Provider interface + implementations
 ├── prompts/           # Versioned prompt files
 ├── rag/               # File indexing + vector retrieval
+├── agents/            # Agent definitions, runner, orchestrator, registry
 └── telemetry/         # Generation metrics
 
 frontend/              # React SPA
@@ -226,6 +231,8 @@ frontend/              # React SPA
 | `/api/export/:projectId/latest` | GET      | Download stored package |
 | `/api/artifacts/:id`          | GET        | Get artifact           |
 | `/api/artifacts/:id/feedback` | POST       | Submit feedback        |
+| `/api/agent-workflows`        | POST/GET   | Create/list agent workflows |
+| `/api/agents`                 | GET        | List available agents  |
 
 ## Engineering Principles
 

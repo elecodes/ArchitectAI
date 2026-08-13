@@ -54,19 +54,21 @@ Production hardening for AWS operations: security fixes, real health checks, and
 
 ---
 
-### v1.5.0 — Architecture Improvements
+### v1.5.0 — Agentic AI ✅ delivered
 
-Enhance the core generation quality and output richness.
+Replace the monolithic generation pipeline with a typed agent system.
 
-- API design generation (OpenAPI spec from requirements)
-- Database schema generation from architecture
-- Improved prompt engineering based on feedback data
-- Proper tokenizer (replace chars/4 heuristic)
-- Streaming responses (SSE for real-time output)
+- 7 typed agents (Requirements, Architecture, Security, Cloud/Cost, DevSecOps, QA, Synthesis)
+- AgentRunner with RAG, context window fitting, Zod validation, retry, timeout, telemetry
+- Lightweight orchestrator with sequential + parallel execution and safe-stop
+- Capability-based security model (OWASP LLM06 Excessive Agency mitigation)
+- API routes for workflow management and agent listing
+- Frontend Workflow page with real-time status tracking
+- 82 new tests (241 total)
 
 ---
 
-### v1.6.0 — Prompt Version Analytics
+### v1.6.0 — Analytics
 
 Data-driven prompt improvement using telemetry and feedback.
 
