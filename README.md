@@ -76,11 +76,11 @@ Default login: `admin` / `architect`
 | Variable             | Required  | Default                     | Description                      |
 | -------------------- | --------- | --------------------------- | -------------------------------- |
 | `JWT_SECRET`         | Yes       | —                           | JWT signing secret               |
-| `LLM_PROVIDER`       | No        | openrouter                  | openrouter, openai, ollama, mock, bedrock |
-| `LLM_API_KEY`        | For cloud | —                           | Provider API key                 |
+| `LLM_PROVIDER`       | No        | openrouter                  | openrouter, openai, ollama, mock, bedrock, groq, google |
+| `LLM_API_KEY`        | For cloud | —                           | Provider API key (openrouter, openai) |
 | `LLM_MODEL`          | No        | anthropic/claude-3.5-sonnet | Model identifier                 |
 | `LLM_CONTEXT_WINDOW` | No        | 128000                      | Context window size              |
-| `EMBEDDING_PROVIDER` | No        | openai                      | openai, openrouter, ollama, mock, bedrock |
+| `EMBEDDING_PROVIDER` | No        | openai                      | openai, openrouter, ollama, mock, bedrock, google |
 | `EMBEDDING_API_KEY`  | For cloud | —                           | Embedding provider key           |
 | `DATABASE_URL`       | Yes       | (set in compose)            | PostgreSQL connection            |
 | `STORAGE_PROVIDER`   | No        | local                       | local, s3                        |
@@ -89,6 +89,11 @@ Default login: `admin` / `architect`
 | `ALLOWED_FS_ROOTS`   | No        | —                           | CSV of allowed filesystem roots for review/index routes (production fails closed to `process.cwd()`) |
 | `MAX_INDEX_FILES`    | No        | 500                         | Max files indexed per project    |
 | `GRACE_PERIOD_MS`    | No        | 10000                       | Graceful shutdown drain window (ms) |
+| `GROQ_API_KEY`       | For Groq  | —                           | Groq API key (required when LLM_PROVIDER=groq) |
+| `GROQ_MODEL`         | No        | openai/gpt-oss-120b         | Groq model identifier            |
+| `GOOGLE_API_KEY`     | For Google| —                           | Google AI API key (required when LLM_PROVIDER=google or EMBEDDING_PROVIDER=google) |
+| `GOOGLE_MODEL`       | No        | gemini-2.0-flash            | Google Gemini model identifier   |
+| `GOOGLE_EMBEDDING_MODEL` | No    | text-embedding-004          | Google embedding model           |
 | `BEDROCK_EMBEDDING_DIMENSIONS` | No        | 1536                 | Embedding dimensions (Titan v2 models require 256, 512, or 1024) |
 | `RATE_LIMIT_EXPORT`  | No        | 10                          | Export endpoint rate limit (req/min) |
 | `RATE_LIMIT_INDEX`   | No        | 5                           | Index endpoint rate limit (req/min) |
@@ -96,6 +101,18 @@ Default login: `admin` / `architect`
 See `.env.example` for the full set (Bedrock models/region, S3 bucket/prefix, CloudWatch region/namespace). AWS credentials are never configured here — they come from the AWS SDK default credential provider chain.
 
 ## LLM Providers
+
+ArchitectAI supports 7 LLM providers and 6 embedding providers. All are opt-in — the default local run works with `mock`.
+
+| Provider | LLM | Embeddings | Auth | Free Tier |
+|----------|-----|------------|------|-----------|
+| OpenRouter | ✅ | ✅ | API key | — |
+| OpenAI | ✅ | ✅ | API key | — |
+| AWS Bedrock | ✅ | ✅ | AWS SDK chain | — |
+| Groq | ✅ | ❌ | API key | Yes (rate-limited) |
+| Google Gemini | ✅ | ✅ | API key | Yes (generous) |
+| Ollama | ✅ | ✅ | None (local) | Unlimited (self-hosted) |
+| Mock | ✅ | ✅ | None | Unlimited |
 
 ### OpenRouter (recommended)
 
@@ -112,6 +129,36 @@ LLM_PROVIDER=openai
 LLM_API_KEY=sk-...
 LLM_MODEL=gpt-4o
 ```
+
+### Groq (fast inference, free tier)
+
+Groq provides ultra-fast inference via an OpenAI-compatible API. It does **not** support embeddings — use a separate embedding provider (OpenAI, Google, or Ollama).
+
+```env
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=openai/gpt-oss-120b
+```
+
+Groq's free tier includes generous rate limits. See [groq.com](https://groq.com) for current limits.
+
+### Google Gemini (free tier, embeddings)
+
+Google Gemini provides both LLM and embedding capabilities. Uses the native REST API — no SDK dependency.
+
+```env
+LLM_PROVIDER=google
+GOOGLE_API_KEY=AIza...
+GOOGLE_MODEL=gemini-2.0-flash
+
+# Embeddings (optional, separate from LLM)
+EMBEDDING_PROVIDER=google
+GOOGLE_EMBEDDING_MODEL=text-embedding-004
+```
+
+Google AI Studio provides a free tier with generous quotas. See [ai.google.dev](https://ai.google.dev) for details.
+
+> **Cost safety**: ArchitectAI never sends prompts without explicit user action. No background calls, no batching, no hidden costs. All providers use pay-per-use — no provisioned resources.
 
 ### AWS Bedrock (optional)
 

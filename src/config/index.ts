@@ -4,8 +4,8 @@ import { logger } from '../logger.js';
 
 dotenv.config();
 
-const LLM_PROVIDERS = ['openrouter', 'openai', 'ollama', 'mock', 'bedrock'] as const;
-const EMBEDDING_PROVIDERS = ['openai', 'openrouter', 'ollama', 'mock', 'bedrock'] as const;
+const LLM_PROVIDERS = ['openrouter', 'openai', 'ollama', 'mock', 'bedrock', 'groq', 'google'] as const;
+const EMBEDDING_PROVIDERS = ['openai', 'openrouter', 'ollama', 'mock', 'bedrock', 'google'] as const;
 const STORAGE_PROVIDERS = ['local', 's3'] as const;
 const WEAK_JWT_SECRETS: string[] = ['dev-secret', 'secret', 'changeme'];
 
@@ -58,6 +58,15 @@ export const configSchema = z.object({
   bedrockTimeoutMs: z.coerce.number().default(60000),
   bedrockEmbeddingModel: z.string().default('amazon.titan-embed-text-v1'),
   bedrockEmbeddingDimensions: z.coerce.number().default(1536),
+
+  // Groq (optional, fast inference via OpenAI-compatible API)
+  groqApiKey: z.string().default(''),
+  groqModel: z.string().default('openai/gpt-oss-120b'),
+
+  // Google Gemini (optional, native API)
+  googleApiKey: z.string().default(''),
+  googleModel: z.string().default('gemini-2.0-flash'),
+  googleEmbeddingModel: z.string().default('text-embedding-004'),
 
   // Artifact storage (local default, S3 optional)
   storageProvider: z.enum(STORAGE_PROVIDERS).default('local'),
@@ -126,6 +135,22 @@ export const configSchema = z.object({
       });
     }
   }
+  // Groq provider requires API key
+  if (val.llmProvider === 'groq' && !val.groqApiKey) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['groqApiKey'],
+      message: 'GROQ_API_KEY is required when LLM_PROVIDER=groq',
+    });
+  }
+  // Google provider requires API key
+  if (val.llmProvider === 'google' && !val.googleApiKey) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['googleApiKey'],
+      message: 'GOOGLE_API_KEY is required when LLM_PROVIDER=google',
+    });
+  }
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -156,6 +181,11 @@ function loadConfig(): Config {
     bedrockTimeoutMs: process.env.BEDROCK_TIMEOUT_MS,
     bedrockEmbeddingModel: process.env.BEDROCK_EMBEDDING_MODEL,
     bedrockEmbeddingDimensions: process.env.BEDROCK_EMBEDDING_DIMENSIONS,
+    groqApiKey: process.env.GROQ_API_KEY,
+    groqModel: process.env.GROQ_MODEL,
+    googleApiKey: process.env.GOOGLE_API_KEY,
+    googleModel: process.env.GOOGLE_MODEL,
+    googleEmbeddingModel: process.env.GOOGLE_EMBEDDING_MODEL,
     storageProvider: process.env.STORAGE_PROVIDER,
     storageLocalDir: process.env.STORAGE_LOCAL_DIR,
     s3Bucket: process.env.S3_BUCKET,

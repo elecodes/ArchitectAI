@@ -18,6 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - OWASP LLM Top 10 security review
 - 5 ADRs documenting agent system design decisions
 - 82 new tests (241 total)
+- Groq LLM provider (OpenAI-compatible API, fast inference, free tier)
+- Google Gemini LLM + embedding provider (native REST API, free tier)
+- ADR-0022: Multi-provider LLM expansion decision record
 
 ### Changed
 

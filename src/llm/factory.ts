@@ -3,6 +3,7 @@ import { MockLLMClient } from './providers/mock.js';
 import { OpenRouterClient } from './providers/openrouter.js';
 import { OpenAIClient } from './providers/openai.js';
 import { BedrockClient } from './providers/bedrock.js';
+import { GoogleClient } from './providers/google.js';
 import type { Config } from '../config/index.js';
 
 export function createLLMClient(config: Config): LLMClient {
@@ -33,12 +34,29 @@ export function createLLMClient(config: Config): LLMClient {
         baseUrl: config.ollamaUrl + '/v1',
         embeddingModel: config.embeddingModel,
       });
+    case 'groq':
+      if (!config.groqApiKey) {
+        throw new Error('GROQ_API_KEY is required when LLM_PROVIDER=groq');
+      }
+      return new OpenAIClient({
+        apiKey: config.groqApiKey,
+        model: config.groqModel,
+        baseUrl: 'https://api.groq.com/openai/v1',
+      });
     case 'bedrock':
       return new BedrockClient({
         model: config.bedrockModel,
         region: config.bedrockRegion,
         timeoutMs: config.bedrockTimeoutMs,
         embeddingModel: config.bedrockEmbeddingModel,
+      });
+    case 'google':
+      if (!config.googleApiKey) {
+        throw new Error('GOOGLE_API_KEY is required when LLM_PROVIDER=google');
+      }
+      return new GoogleClient({
+        apiKey: config.googleApiKey,
+        model: config.googleModel,
       });
     default:
       throw new Error(`Unknown LLM provider: "${config.llmProvider}"`);
@@ -81,6 +99,15 @@ export function createEmbeddingClient(config: Config): LLMClient {
         timeoutMs: config.bedrockTimeoutMs,
         embeddingModel: config.bedrockEmbeddingModel,
         embeddingDimensions: config.bedrockEmbeddingDimensions,
+      });
+    case 'google':
+      if (!config.googleApiKey) {
+        throw new Error('GOOGLE_API_KEY is required when EMBEDDING_PROVIDER=google');
+      }
+      return new GoogleClient({
+        apiKey: config.googleApiKey,
+        model: config.llmModel,
+        embeddingModel: config.googleEmbeddingModel,
       });
     default:
       throw new Error(`Unknown embedding provider: "${config.embeddingProvider}"`);
