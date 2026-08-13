@@ -176,3 +176,65 @@ export async function exportToStorage(projectId: string) {
 export async function getStoredExport(projectId: string): Promise<Blob> {
   return requestBlob(`/export/${projectId}/latest`);
 }
+
+export interface AgentWorkflow {
+  id: string;
+  projectId: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  model: string;
+  provider: string;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  totalDurationMs: number | null;
+}
+
+export interface AgentWorkflowStep {
+  id: string;
+  workflowId: string;
+  agentId: string;
+  agentName: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'skipped';
+  resultArtifactId: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  durationMs: number | null;
+  retryCount: number;
+  promptVersion: string | null;
+  model: string | null;
+  provider: string | null;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  output: Record<string, unknown> | null;
+}
+
+export interface AgentInfo {
+  id: string;
+  name: string;
+  description: string;
+  capabilities: string[];
+  timeoutMs: number;
+}
+
+export async function createWorkflow(projectId: string, idea: string, context?: string): Promise<{ workflow: AgentWorkflow }> {
+  return request('/agent-workflows', {
+    method: 'POST',
+    body: JSON.stringify({ projectId, idea, context }),
+  });
+}
+
+export async function listWorkflows(projectId: string): Promise<{ workflows: AgentWorkflow[] }> {
+  return request(`/agent-workflows?projectId=${encodeURIComponent(projectId)}`);
+}
+
+export async function getWorkflowStatus(id: string): Promise<{ workflow: AgentWorkflow; steps: AgentWorkflowStep[] }> {
+  return request(`/agent-workflows/${id}/status`);
+}
+
+export async function listAgents(): Promise<{ agents: AgentInfo[] }> {
+  return request('/agents');
+}

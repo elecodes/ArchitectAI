@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import NewProject from './pages/NewProject';
 import Generate from './pages/Generate';
 import Review from './pages/Review';
+import Workflow from './pages/Workflow';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!getToken()) return <Navigate to="/login" replace />;
@@ -45,6 +46,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Review />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/project/:id/workflow"
+          element={
+            <ProtectedRoute>
+              <Workflow />
             </ProtectedRoute>
           }
         />
