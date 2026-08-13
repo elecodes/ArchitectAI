@@ -120,7 +120,7 @@ export async function updateWorkflowStatus(
 ): Promise<void> {
   await query(
     `UPDATE agent_workflows SET
-       status = $2,
+       status = $2::varchar,
        started_at = CASE WHEN $2 = 'running' THEN COALESCE(started_at, NOW()) ELSE started_at END,
        completed_at = CASE WHEN $2 IN ('completed', 'failed', 'cancelled') THEN COALESCE(completed_at, $3) ELSE completed_at END,
        error_code = COALESCE($4, error_code),
@@ -185,7 +185,7 @@ export async function updateStepStatus(
   const output = partial.output === undefined ? null : JSON.stringify(partial.output);
   await query(
     `UPDATE agent_workflow_steps SET
-       status = $2,
+       status = $2::varchar,
        result_artifact_id = COALESCE($3, result_artifact_id),
        duration_ms = COALESCE($4, duration_ms),
        retry_count = COALESCE($5, retry_count),
