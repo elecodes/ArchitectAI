@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OpenAIClient } from '../../src/llm/providers/openai.js';
+import { GroqClient } from '../../src/llm/providers/groq.js';
 
 // ── Global fetch mock ────────────────────────────────────────────────
 const fetchMock = vi.fn<typeof fetch>();
@@ -266,9 +267,9 @@ function cfg(overrides: Partial<Config> = {}): Config {
 }
 
 describe('Factory integration for groq provider', () => {
-  it('createLLMClient with provider=groq creates OpenAIClient', () => {
+  it('createLLMClient with provider=groq creates GroqClient', () => {
     const client = createLLMClient(cfg({ llmProvider: 'groq', groqApiKey: 'gsk_key' }));
-    expect(client).toBeInstanceOf(OpenAIClient);
+    expect(client).toBeInstanceOf(GroqClient);
   });
 
   it('createLLMClient with provider=groq throws when GROQ_API_KEY is missing', () => {

@@ -23,22 +23,22 @@ The standing provider architecture (ADR-0003: LLMClient interface, ADR-0013: pro
 
 Add Groq and Google Gemini as LLM providers, with Google also supporting embeddings.
 
-### Groq: Reuses OpenAIClient
+### Groq: Dedicated GroqClient with Rate-Limit Fallbacks
 
-Groq exposes an OpenAI-compatible API (`/openai/v1`). Rather than writing a new client class, the factory instantiates `OpenAIClient` with Groq's base URL:
+To ensure robustness on the Groq free tier (which features strict rate limits), we introduced a custom `GroqClient` that acts as a wrapper around `OpenAIClient` to handle fallback logic:
 
 ```typescript
 case 'groq':
-  return new OpenAIClient({
+  return new GroqClient({
     apiKey: config.groqApiKey,
     model: config.groqModel,
-    baseUrl: 'https://api.groq.com/openai/v1',
   });
 ```
 
-**Why this works**: Groq's API is wire-compatible with OpenAI's chat completions format. The `OpenAIClient` already handles request/response serialization, so no new code is needed. This is the same pattern used for Ollama (also OpenAI-compatible).
+**Why this is necessary**: Free-tier rate limits (TPM/RPM) are shared key-wide and are easily exhausted by sequential generation pipeline calls. If a model request gets rate-limited (`429`), the `GroqClient` catches the error, sleeps for 2 seconds to let the rate-limit window cool down, and automatically falls back to alternative models (specifically `llama-3.1-8b-instant` and `llama-3.3-70b-versatile`) before ultimately failing.
 
 **Embedding limitation**: Groq does not support an embedding API. The factory throws a descriptive error directing users to OpenAI, Google, or Ollama for embeddings.
+
 
 ### Google Gemini: Native REST (No SDK)
 

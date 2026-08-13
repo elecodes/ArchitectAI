@@ -140,7 +140,8 @@ GROQ_API_KEY=gsk_...
 GROQ_MODEL=openai/gpt-oss-120b
 ```
 
-Groq's free tier includes generous rate limits. See [groq.com](https://groq.com) for current limits.
+Groq's free tier is subject to strict RPM and TPM rate limits. ArchitectAI's `GroqClient` includes a built-in rate-limit fallback mechanism: if the primary model (`openai/gpt-oss-120b`) is rate-limited (`429`), it will wait 2 seconds and automatically fall back to alternative models (`llama-3.1-8b-instant` and `llama-3.3-70b-versatile`) before failing.
+
 
 ### Google Gemini (free tier, embeddings)
 

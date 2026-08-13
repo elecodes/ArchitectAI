@@ -4,6 +4,7 @@ import { OpenRouterClient } from './providers/openrouter.js';
 import { OpenAIClient } from './providers/openai.js';
 import { BedrockClient } from './providers/bedrock.js';
 import { GoogleClient } from './providers/google.js';
+import { GroqClient } from './providers/groq.js';
 import type { Config } from '../config/index.js';
 
 export function createLLMClient(config: Config): LLMClient {
@@ -38,10 +39,9 @@ export function createLLMClient(config: Config): LLMClient {
       if (!config.groqApiKey) {
         throw new Error('GROQ_API_KEY is required when LLM_PROVIDER=groq');
       }
-      return new OpenAIClient({
+      return new GroqClient({
         apiKey: config.groqApiKey,
         model: config.groqModel,
-        baseUrl: 'https://api.groq.com/openai/v1',
       });
     case 'bedrock':
       return new BedrockClient({
