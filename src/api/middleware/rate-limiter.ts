@@ -35,3 +35,12 @@ export const indexLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: { code: 'RATE_LIMITED', message: 'Index rate limit exceeded. Please wait before indexing again.' } },
 });
+
+// Workflow endpoints: 5 requests per minute (multi-agent orchestration)
+export const workflowLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_WORKFLOW || '5', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { code: 'RATE_LIMITED', message: 'Workflow rate limit exceeded. Please wait before starting another workflow.' } },
+});
