@@ -13,7 +13,9 @@ export class GroqClient implements LLMClient {
   constructor(private readonly config: GroqConfig) {}
 
   async complete(request: CompletionRequest): Promise<CompletionResponse> {
-    const modelsToTry = [this.config.model, 'llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
+    const defaultModels = ['llama-3.3-70b-versatile', 'llama3-70b-8192', 'mixtral-8x7b-32768'];
+    const modelsToTry = Array.from(new Set([this.config.model, ...defaultModels])).filter(m => m !== 'mock-model');
+    if (modelsToTry.length === 0) modelsToTry.push('llama-3.3-70b-versatile');
     let lastError: any = null;
 
     for (const model of modelsToTry) {

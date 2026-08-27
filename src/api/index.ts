@@ -13,6 +13,7 @@ import { reviewRouter } from './routes/review.js';
 import { exportRouter } from './routes/export.js';
 import { agentWorkflowsRouter } from './routes/agent-workflows.js';
 import { agentsRouter } from './routes/agents.js';
+import { evaluationsRouter } from './routes/evaluations.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { generalLimiter, generationLimiter, workflowLimiter } from './middleware/rate-limiter.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
@@ -49,8 +50,9 @@ export function createApp() {
   app.use('/api/export', exportRouter);
   app.use('/api/artifacts', artifactsRouter);
   app.use('/api/artifacts', feedbackRouter);
-  app.use('/api/agent-workflows', workflowLimiter, agentWorkflowsRouter);
+  app.use('/api/agent-workflows', agentWorkflowsRouter);
   app.use('/api/agents', agentsRouter);
+  app.use('/api/evaluations', evaluationsRouter);
 
   // Serve frontend static files in production
   const __dirname = dirname(fileURLToPath(import.meta.url));

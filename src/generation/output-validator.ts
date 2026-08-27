@@ -15,11 +15,19 @@ export interface ValidationResult<T> {
 
 export class OutputValidator {
   validate<T>(raw: string, schema: z.ZodType<T>): ValidationResult<T> {
-    // Step 1: Extract JSON from markdown code blocks if present
     let cleanText = raw.trim();
-    const jsonMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      cleanText = jsonMatch[1].trim();
+
+    // Step 1: Extract JSON from markdown code blocks
+    const codeBlockMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (codeBlockMatch) {
+      cleanText = codeBlockMatch[1].trim();
+    } else {
+      // Step 1b: Extract outermost JSON object if leading/trailing prose exists
+      const firstBrace = cleanText.indexOf('{');
+      const lastBrace = cleanText.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        cleanText = cleanText.slice(firstBrace, lastBrace + 1).trim();
+      }
     }
 
     // Step 2: JSON parse

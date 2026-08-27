@@ -20,7 +20,7 @@ export const architectureAgent: AgentDefinition<ArchitectureInput, ArchitectureO
   inputSchema: ArchitectureInputSchema,
   outputSchema: ArchitectureSchema,
   capabilities: ['rag:read', 'artifact:read:requirements'],
-  timeoutMs: 30_000,
+  timeoutMs: 120_000,
   maxTransientRetries: 2,
 };
 

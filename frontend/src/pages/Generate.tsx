@@ -554,10 +554,19 @@ export default function Generate() {
           </>
         }
         right={
-          pipelineStatus === 'complete' && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
+          <div className="flex items-center gap-2">
+            {projectId && (
+              <Link
+                to={`/project/${projectId}/workflow`}
+                className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-blue-50 px-3 py-1 font-mono text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white"
+              >
+                Grill Me Workflow →
+              </Link>
+            )}
+            {pipelineStatus === 'complete' && (
+              <>
+                <Button
+                  variant="outline"
                 size="sm"
                 onClick={handleSaveToStorage}
                 disabled={storageStatus === 'saving'}
@@ -578,9 +587,10 @@ export default function Generate() {
               <Button size="sm" onClick={handleExport}>
                 <IconDownload className="h-3.5 w-3.5" /> Export .zip
               </Button>
-            </div>
-          )
-        }
+            </>
+          )}
+        </div>
+      }
       />
 
       {pipelineStatus !== 'idle' && (

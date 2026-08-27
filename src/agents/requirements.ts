@@ -19,7 +19,7 @@ export const requirementsAgent: AgentDefinition<RequirementsInput, RequirementsO
   inputSchema: RequirementsInputSchema,
   outputSchema: RequirementsSchema,
   capabilities: ['rag:read'],
-  timeoutMs: 30_000,
+  timeoutMs: 120_000,
   maxTransientRetries: 2,
 };
 

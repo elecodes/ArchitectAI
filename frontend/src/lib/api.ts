@@ -180,7 +180,7 @@ export async function getStoredExport(projectId: string): Promise<Blob> {
 export interface AgentWorkflow {
   id: string;
   projectId: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'running' | 'awaiting_input' | 'completed' | 'failed' | 'cancelled';
   model: string;
   provider: string;
   createdAt: string;
@@ -235,6 +235,44 @@ export async function getWorkflowStatus(id: string): Promise<{ workflow: AgentWo
   return request(`/agent-workflows/${id}/status`);
 }
 
+export async function resumeWorkflow(
+  id: string,
+  idea: string,
+  answers: Record<string, string>,
+  context?: string,
+): Promise<{ status: string; workflowId: string }> {
+  return request(`/agent-workflows/${id}/resume`, {
+    method: 'POST',
+    body: JSON.stringify({ idea, answers, context }),
+  });
+}
+
 export async function listAgents(): Promise<{ agents: AgentInfo[] }> {
   return request('/agents');
 }
+
+// Evaluations & Benchmarking
+export async function listDatasets() {
+  return request<any>('/evaluations/datasets');
+}
+
+export async function listRuns() {
+  return request<any>('/evaluations/runs');
+}
+
+export async function getRunDetails(id: string) {
+  return request<any>(`/evaluations/runs/${id}`);
+}
+
+export async function startBenchmark(agentId: string, provider: string, model: string, promptVersion: string) {
+  return request<any>('/evaluations/benchmark', {
+    method: 'POST',
+    body: JSON.stringify({ agentId, provider, model, promptVersion }),
+  });
+}
+
+export async function getLeaderboard(filters: Record<string, string> = {}) {
+  const params = new URLSearchParams(filters).toString();
+  return request<any>(`/evaluations/leaderboard${params ? `?${params}` : ''}`);
+}
+

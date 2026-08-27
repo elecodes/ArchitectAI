@@ -1,9 +1,10 @@
-export type AgentWorkflowStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type AgentWorkflowStatus = 'pending' | 'running' | 'awaiting_input' | 'completed' | 'failed' | 'cancelled';
 export type AgentStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'skipped';
 
 export const WORKFLOW_TRANSITIONS: Record<AgentWorkflowStatus, AgentWorkflowStatus[]> = {
   pending: ['running', 'cancelled'],
-  running: ['completed', 'failed', 'cancelled'],
+  running: ['awaiting_input', 'completed', 'failed', 'cancelled'],
+  awaiting_input: ['running', 'cancelled', 'failed'],
   completed: [],
   failed: [],
   cancelled: [],

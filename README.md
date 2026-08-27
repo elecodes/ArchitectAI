@@ -8,7 +8,7 @@ ArchitectAI is an AI Software Architect that generates complete engineering pack
 
 ## Current Status
 
-**Version: 1.5.0** — Agentic AI.
+**Version: 1.6.0** — Evaluation, Feedback & Model Intelligence.
 
 ArchitectAI can today:
 
@@ -35,8 +35,9 @@ See [ROADMAP.md](ROADMAP.md) for planned features.
 - **Provider Agnostic** — OpenRouter, OpenAI, Ollama, AWS Bedrock, or mock
 - **RAG-Enhanced** — Index your project files for context-aware generation
 - **Telemetry** — Per-generation metrics to Postgres, optionally mirrored to CloudWatch
+- **Evaluation & Model Intelligence (v1.6.0)** — Versioned golden software ideas dataset, Level 1 deterministic (Zod) and Level 2 semantic (LLM-as-Judge) evaluation, latency/cost benchmarking, and prompt versioning comparisons
 
-### Agent System (v1.5.0)
+### Agent System & Model Intelligence (v1.6.0)
 
 Seven typed agents replace the monolithic generation pipeline. Each agent has explicit Zod input/output schemas, a capability whitelist, and a versioned prompt. The `AgentRunner` provides shared infrastructure (RAG, context window fitting, validation retry, timeout, telemetry). A lightweight orchestrator coordinates execution with one parallel fork (Security ∥ Cloud/Cost after Architecture). The capability model enforces OWASP LLM06 Excessive Agency — agents cannot access resources they haven't declared. See `docs/adr/0017` through `0021` for design decisions.
 

@@ -21,7 +21,7 @@ export const devsecopsAgent: AgentDefinition<DevSecOpsInput, DevSecOpsOutput> = 
   inputSchema: DevSecOpsInputSchema,
   outputSchema: DevSecOpsSchema,
   capabilities: ['rag:read', 'artifact:read:agent_architecture', 'artifact:read:security_analysis'],
-  timeoutMs: 30_000,
+  timeoutMs: 120_000,
   maxTransientRetries: 2,
 };
 

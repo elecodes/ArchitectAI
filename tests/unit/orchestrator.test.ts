@@ -32,6 +32,8 @@ vi.mock('../../src/db/repositories/agent-workflow-repo.js', () => ({
 
 vi.mock('../../src/agents/registry.js', () => ({
   getAgentDefinition: vi.fn(),
+  registerAgent: vi.fn(),
+  listAgentDefinitions: vi.fn().mockReturnValue([]),
 }));
 
 import {
@@ -44,6 +46,7 @@ import { getAgentDefinition } from '../../src/agents/registry.js';
 const OutputSchema = z.object({ result: z.string() });
 
 const AGENT_IDS = [
+  'intake',
   'requirements',
   'agent-architecture',
   'security',
@@ -73,9 +76,17 @@ let stepCounter = 0;
 function mockRunner(runFn?: (def: AgentDefinition<any, any>, ctx: any) => any) {
   return {
     run: async (def: AgentDefinition<any, any>, ctx: any) => {
-      if (runFn) return runFn(def, ctx);
+      if (runFn) {
+        const res = await runFn(def, ctx);
+        if (res) {
+          if (def.id === 'intake' && res.output && (res.output as any).isSufficient === undefined) {
+            (res.output as any).isSufficient = true;
+          }
+          return res;
+        }
+      }
       return {
-        output: { result: `mock-${def.id}-output` },
+        output: def.id === 'intake' ? { isSufficient: true, summary: 'Clear prompt', questions: [] } : { result: `mock-${def.id}-output` },
         provenance: {
           model: 'mock',
           promptVersion: 'v1',
@@ -166,6 +177,7 @@ describe('Orchestrator', () => {
 
     expect(result.status).toBe('completed');
     expect(result.completedSteps).toEqual([
+      'intake',
       'requirements',
       'agent-architecture',
       'security',
@@ -180,17 +192,18 @@ describe('Orchestrator', () => {
     expect(updateWorkflowStatus).toHaveBeenCalledWith('wf-1', 'running');
     expect(updateWorkflowStatus).toHaveBeenCalledWith('wf-1', 'completed');
 
-    expect(updateStepStatus).toHaveBeenCalledTimes(14);
+    expect(updateStepStatus).toHaveBeenCalledTimes(16);
     const runningCalls = (updateStepStatus as any).mock.calls.filter(
       (c: any[]) => c[1] === 'running',
     );
-    expect(runningCalls).toHaveLength(7);
+    expect(runningCalls).toHaveLength(8);
     const completedCalls = (updateStepStatus as any).mock.calls.filter(
       (c: any[]) => c[1] === 'completed',
     );
-    expect(completedCalls).toHaveLength(7);
+    expect(completedCalls).toHaveLength(8);
 
     expect(callOrder).toEqual([
+      'intake',
       'requirements',
       'agent-architecture',
       'security',
@@ -233,7 +246,7 @@ describe('Orchestrator', () => {
     expect(result.status).toBe('failed');
     expect(result.failedStep).toBe('agent-architecture');
     expect(result.error).toBe('Architecture generation failed');
-    expect(result.completedSteps).toEqual(['requirements', 'agent-architecture']);
+    expect(result.completedSteps).toEqual(['intake', 'requirements', 'agent-architecture']);
 
     expect(updateWorkflowStatus).toHaveBeenCalledWith('wf-1', 'failed', {
       errorCode: 'AGENT_FAILED',
@@ -250,7 +263,7 @@ describe('Orchestrator', () => {
     });
 
     const agentIds = (createStep as any).mock.calls.map((c: any[]) => c[0].agentId);
-    expect(agentIds).toEqual(['requirements', 'agent-architecture']);
+    expect(agentIds).toEqual(['intake', 'requirements', 'agent-architecture']);
   });
 
   it('safe-stop: signal aborted before Phase 3, workflow cancelled', async () => {
@@ -271,7 +284,7 @@ describe('Orchestrator', () => {
     const result = await orch.execute(defaultInput, controller.signal);
 
     expect(result.status).toBe('cancelled');
-    expect(result.completedSteps).toEqual(['requirements', 'agent-architecture']);
+    expect(result.completedSteps).toEqual(['intake', 'requirements', 'agent-architecture']);
 
     expect(updateWorkflowStatus).toHaveBeenCalledWith('wf-1', 'cancelled');
   });
@@ -366,7 +379,7 @@ describe('Orchestrator', () => {
     const completedSteps = (updateStepStatus as any).mock.calls.filter(
       (c: any[]) => c[1] === 'completed',
     );
-    expect(completedSteps).toHaveLength(6);
+    expect(completedSteps).toHaveLength(7);
   });
 
   it('agent not found: unknown agentId, step failed, workflow failed', async () => {

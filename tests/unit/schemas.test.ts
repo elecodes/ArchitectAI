@@ -140,7 +140,7 @@ describe('QASchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('fails on invalid test level', () => {
+  it('parses test levels with flexible string values', () => {
     const result = QASchema.safeParse({
       testStrategy: '...',
       testLevels: [{ level: 'smoke', description: '...', coverage: '...' }],
@@ -149,7 +149,7 @@ describe('QASchema', () => {
       acceptanceCriteria: [],
       qualityRisks: [],
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 });
 

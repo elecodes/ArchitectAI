@@ -68,16 +68,15 @@ Replace the monolithic generation pipeline with a typed agent system.
 
 ---
 
-### v1.6.0 — Analytics
+### v1.6.0 — Evaluation, Feedback & Model Intelligence ✅ delivered
 
-Data-driven prompt improvement using telemetry and feedback.
+Introduce versioned golden evaluation datasets, evaluation engines, benchmarking, and simple model leaderboard UI.
 
-- Dashboard showing generation success rates per prompt version
-- Token usage trends over time
-- Retry rate analysis (which prompts cause most failures)
-- Correlation between prompt versions and user feedback (thumbs up/down)
-- A/B testing framework for prompt changes
-- Evaluation dataset for regression testing
+- Versioned golden software ideas dataset
+- Level 1 deterministic (Zod) + Level 2 semantic (LLM-as-Judge) evaluation
+- Benchmark runner supporting multi-provider runs, latency, cost calculations
+- Prompt version evaluation
+- Model Leaderboard and Workbench UI
 
 ---
 

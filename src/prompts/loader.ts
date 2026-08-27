@@ -21,6 +21,7 @@ const REQUIRED_PROMPTS = [
   'review-improvements',
   'vision',
   'risk-assessment',
+  'intake',
 ];
 
 export function loadPrompts(promptsDir: string): Map<string, LoadedPrompt> {
@@ -40,6 +41,14 @@ export function loadPrompts(promptsDir: string): Map<string, LoadedPrompt> {
     const tokenEstimate = Math.ceil(content.length / 4);
 
     prompts.set(name, {
+      name,
+      version: `v${version}`,
+      content,
+      tokenEstimate,
+    });
+
+    // Also store version-specific key for benchmarking
+    prompts.set(`${name}-v${version}`, {
       name,
       version: `v${version}`,
       content,

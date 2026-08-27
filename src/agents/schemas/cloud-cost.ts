@@ -5,10 +5,10 @@ export const CloudCostSchema = z.object({
   awsRecommendations: z.array(z.object({
     service: z.string(),
     useCase: z.string(),
-    estimatedMonthlyCost: z.string(),
+    estimatedMonthlyCost: z.number().or(z.string()),
     freeTierEligible: z.boolean().optional(),
   })),
-  totalEstimatedMonthlyCost: z.string(),
+  totalEstimatedMonthlyCost: z.number().or(z.string()),
   freeTierAlternatives: z.array(z.string()),
   localAlternatives: z.array(z.string()).describe('Local/self-hosted alternatives to cloud services'),
   optimizationTips: z.array(z.string()).optional(),

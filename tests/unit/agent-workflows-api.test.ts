@@ -23,6 +23,8 @@ vi.mock('../../src/db/repositories/agent-workflow-repo.js', () => ({
 
 vi.mock('../../src/agents/registry.js', () => ({
   listAgentDefinitions: () => mocks.listAgentDefinitions(),
+  registerAgent: vi.fn(),
+  getAgentDefinition: vi.fn(),
 }));
 
 vi.mock('../../src/agents/orchestrator.js', () => ({

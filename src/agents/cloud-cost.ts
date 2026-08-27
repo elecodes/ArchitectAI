@@ -21,7 +21,7 @@ export const cloudCostAgent: AgentDefinition<CloudCostInput, CloudCostOutput> = 
   inputSchema: CloudCostInputSchema,
   outputSchema: CloudCostSchema,
   capabilities: ['rag:read', 'artifact:read:agent_architecture', 'artifact:read:requirements'],
-  timeoutMs: 30_000,
+  timeoutMs: 120_000,
   maxTransientRetries: 2,
 };
 

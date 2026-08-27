@@ -29,7 +29,7 @@ export const synthesisAgent: AgentDefinition<SynthesisInput, SynthesisOutput> = 
   inputSchema: SynthesisInputSchema,
   outputSchema: SynthesisSchema,
   capabilities: ['rag:read', 'artifact:read:requirements', 'artifact:read:agent_architecture', 'artifact:read:security_analysis', 'artifact:read:cloud_cost_analysis', 'artifact:read:devsecops_analysis', 'artifact:read:test_strategy'],
-  timeoutMs: 60_000,
+  timeoutMs: 120_000,
   maxTransientRetries: 2,
 };
 

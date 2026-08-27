@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { listAgentDefinitions } from '../../agents/registry.js';
+import { listAgentDefinitions } from '../../agents/index.js';
 
 const router = Router();
 

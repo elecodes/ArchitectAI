@@ -37,6 +37,170 @@ export class MockLLMClient implements LLMClient {
       await new Promise((resolve) => setTimeout(resolve, this.mockConfig.latencyMs));
     }
 
+    const MOCK_INTAKE = JSON.stringify({
+      isSufficient: false,
+      summary: 'The concept is high-level and requires key architectural decisions.',
+      questions: [
+        {
+          id: 'frontend_platform',
+          category: 'stack',
+          question: 'Which client platforms will the app support?',
+          options: ['Web (React)', 'Mobile iOS (Swift)', 'Mobile Android (Kotlin)', 'Cross-platform (Flutter)'],
+          recommendation: 'Web (React)',
+          rationale: 'Fastest MVP development cycle.',
+        },
+        {
+          id: 'backend_language',
+          category: 'stack',
+          question: 'Which backend technology stack do you prefer?',
+          options: ['Node.js (Express)', 'Python (FastAPI)', 'Go (Gin)', 'Java (Spring Boot)'],
+          recommendation: 'Node.js (Express)',
+          rationale: 'High concurrency, large ecosystem.',
+        },
+        {
+          id: 'message_transport',
+          category: 'stack',
+          question: 'What protocol will you use for real-time delivery?',
+          options: ['WebSockets', 'Server-Sent Events (SSE)', 'gRPC streaming'],
+          recommendation: 'WebSockets',
+          rationale: 'Bidirectional low-latency communication.',
+        },
+        {
+          id: 'scale_expectation',
+          category: 'scale',
+          question: 'What peak concurrent user count do you anticipate?',
+          options: ['<10k', '10k-100k', '100k-1M', '>1M'],
+          recommendation: '10k-100k',
+          rationale: 'Guides database sizing and load balancing.',
+        },
+        {
+          id: 'compliance_requirements',
+          category: 'compliance',
+          question: 'Do you need to meet any data protection regulations?',
+          options: ['GDPR (EU)', 'CCPA (California)', 'HIPAA (Healthcare)', 'None'],
+          recommendation: 'GDPR (EU)',
+          rationale: 'Ensures user privacy compliance.',
+        },
+      ],
+    });
+
+    const MOCK_REQUIREMENTS = JSON.stringify({
+      clarifiedRequirements: 'Real-time application with high concurrency, WebSocket messaging, and GDPR compliance.',
+      functionalRequirements: [
+        { id: 'FR-1', description: 'User authentication and profile management', priority: 'must' },
+        { id: 'FR-2', description: 'Real-time WebSocket message dispatch', priority: 'must' },
+        { id: 'FR-3', description: 'Data encryption and privacy compliance', priority: 'must' },
+      ],
+      nonFunctionalRequirements: [
+        { category: 'performance', description: 'Sub-100ms latency for message delivery', metric: '<100ms' },
+        { category: 'scalability', description: 'Support up to 100k peak concurrent users', metric: '100k TPS' },
+      ],
+      assumptions: ['Cloud hosting environment with WebSocket gateway support'],
+      risks: ['High memory footprint under peak WebSocket connection bursts'],
+      acceptanceCriteria: [
+        'WHEN a user sends a message THEN it SHALL be delivered to connected clients within 100ms',
+      ],
+    });
+
+    const MOCK_ARCHITECTURE = JSON.stringify({
+      components: [
+        {
+          name: 'AuthGateway',
+          description: 'Handles client authentication and JWT validation',
+          responsibilities: ['Validate JWT', 'Rate limit incoming requests'],
+          interfaces: ['REST API', 'WebSocket Gateway'],
+        },
+        {
+          name: 'MessageEngine',
+          description: 'Manages real-time WebSocket connections and message routing',
+          responsibilities: ['Publish messages to channels', 'Maintain connection state'],
+          interfaces: ['WebSocket Server', 'Redis PubSub'],
+        },
+      ],
+      dataFlow: 'Client connects to AuthGateway, authenticates via JWT, and upgrades to WebSocket connection managed by MessageEngine.',
+      techDecisions: [
+        {
+          decision: 'Node.js with WebSockets',
+          rationale: 'High event loop performance for concurrent persistent connections',
+          alternatives: ['Go (Gin)', 'Python (FastAPI)'],
+        },
+      ],
+      rationale: 'Clean layered architecture isolating real-time transport from authentication and data persistence.',
+      tradeoffs: ['Stateful WebSocket connections require Redis PubSub for multi-node scaling.'],
+    });
+
+    const MOCK_SECURITY = JSON.stringify({
+      threats: [
+        { threat: 'Man-in-the-Middle Attack', severity: 'high', mitigation: 'TLS 1.3 encryption on all endpoints', owaspCategory: 'A02:2021-Cryptographic Failures' },
+      ],
+      controls: ['TLS 1.3', 'JWT with Short Expiration', 'Rate Limiting'],
+      authentication: 'JWT-based Bearer Token Auth',
+      authorization: 'Role-Based Access Control (RBAC)',
+      dataProtection: ['TLS 1.3 in transit', 'AES-256 at rest'],
+      recommendations: ['Enforce strict Content Security Policy', 'Rotate JWT signing keys periodically'],
+    });
+
+    const MOCK_CLOUD_COST = JSON.stringify({
+      deploymentArchitecture: 'AWS ECS Fargate with ElastiCache Redis',
+      awsRecommendations: [
+        { service: 'AWS Fargate', useCase: 'Containerized API & Gateway', estimatedMonthlyCost: '$40.00', freeTierEligible: false },
+        { service: 'Amazon ElastiCache Redis', useCase: 'PubSub & State Store', estimatedMonthlyCost: '$30.00', freeTierEligible: false },
+      ],
+      totalEstimatedMonthlyCost: '$70.00',
+      freeTierAlternatives: ['Self-hosted Docker on EC2 t4g.small'],
+      localAlternatives: ['Docker Compose with local Redis & PostgreSQL'],
+      optimizationTips: ['Use Fargate Spot for non-critical workloads'],
+    });
+
+    const MOCK_DEVSECOPS = JSON.stringify({
+      cicdPipeline: 'GitHub Actions workflow with SAST and automated Docker build',
+      stages: [
+        { name: 'Build & Test', description: 'Run unit tests and linter', tools: ['Vitest', 'ESLint'] },
+        { name: 'Security Scan', description: 'Run dependency vulnerability scan', tools: ['Trivy', 'npm audit'] },
+      ],
+      dockerConfig: 'Multi-stage Dockerfile based on node:20-slim',
+      deploymentStrategy: 'Rolling update with health check probes',
+      securityAutomation: ['Dependabot', 'Container Scanning'],
+      monitoring: ['CloudWatch Logs', 'Prometheus Metrics'],
+      operationalNotes: ['Set up automated rollbacks on failing health checks'],
+    });
+
+    const MOCK_QA = JSON.stringify({
+      testStrategy: 'Comprehensive multi-level testing including unit, integration, and WebSocket load testing',
+      testLevels: [
+        { level: 'unit', description: 'Unit testing for business logic', coverage: '85%' },
+        { level: 'integration', description: 'API endpoint integration testing', coverage: '75%' },
+      ],
+      testCases: [
+        { name: 'JWT Auth Test', description: 'Verify 401 on invalid token', priority: 'high', type: 'integration' },
+      ],
+      edgeCases: ['WebSocket abrupt disconnect', 'Concurrent authentication attempts'],
+      acceptanceCriteria: ['Pass 100% of P0 critical user journeys'],
+      qualityRisks: [
+        { risk: 'High concurrency connection drop', severity: 'medium', mitigation: 'K6 WebSocket load test in CI' },
+      ],
+    });
+
+    const MOCK_SYNTHESIS = JSON.stringify({
+      executiveSummary: 'Production-ready engineering package for real-time application featuring Phase 0 Intake constraints.',
+      coherentPlan: {
+        requirements: 'Clear functional and compliance requirements validated.',
+        architecture: 'Modular 2-tier service architecture with WebSocket pub/sub.',
+        security: 'OWASP-compliant auth and transport security.',
+        cloudCost: 'Optimized $70/mo Fargate deployment.',
+        devsecops: 'Automated GitHub Actions CI/CD with security scanning.',
+        testStrategy: 'Unit, integration, and WebSocket performance test coverage.',
+      },
+      risks: ['Scalability limits on single-region deployment'],
+      assumptions: ['Production deployment targets AWS cloud infrastructure'],
+      decisions: ['Node.js + WebSockets for real-time messaging', 'PostgreSQL for data persistence'],
+      prioritizedTasks: [
+        { task: 'Set up database schema & migrations', priority: 'high', dependencies: [] },
+        { task: 'Implement AuthGateway & WebSocket engine', priority: 'high', dependencies: ['Set up database schema & migrations'] },
+      ],
+      openQuestions: [],
+    });
+
     const MOCK_VISION = JSON.stringify({
       vision: 'An AI-powered platform for automated software architecture generation',
       problem: 'Software teams spend weeks on architecture before writing code',
@@ -62,26 +226,6 @@ export class MockLLMClient implements LLMClient {
           mitigation: 'Output validation with retry',
           status: 'mitigated',
         },
-        {
-          id: 'RISK-002',
-          description: 'Context window overflow',
-          category: 'ai_llm',
-          probability: 'medium',
-          impact: 'medium',
-          severity: 'medium',
-          mitigation: 'Progressive RAG truncation',
-          status: 'mitigated',
-        },
-        {
-          id: 'RISK-003',
-          description: 'Prompt injection via RAG',
-          category: 'security',
-          probability: 'low',
-          impact: 'medium',
-          severity: 'low',
-          mitigation: 'Delimiter isolation',
-          status: 'monitoring',
-        },
       ],
     });
 
@@ -92,62 +236,10 @@ export class MockLLMClient implements LLMClient {
           description: 'The system shall authenticate users via email and password',
           priority: 'must',
         },
-        {
-          id: 'FR-2',
-          description: 'The system shall issue JWT tokens upon successful authentication',
-          priority: 'must',
-        },
-        {
-          id: 'FR-3',
-          description: 'The system shall validate JWT tokens on protected endpoints',
-          priority: 'must',
-        },
       ],
-      acceptanceCriteria: [
-        'WHEN a user submits valid credentials THEN the system SHALL return a JWT token',
-        'WHEN a user submits invalid credentials THEN the system SHALL return 401',
-        'WHEN a token expires THEN the system SHALL reject the request with 401',
-      ],
-      constraints: ['Passwords must be hashed with bcrypt', 'Tokens expire in 24 hours'],
-      dependencies: ['PostgreSQL database', 'bcrypt library', 'jsonwebtoken library'],
-    });
-
-    const MOCK_ARCHITECTURE = JSON.stringify({
-      components: [
-        {
-          name: 'AuthService',
-          layer: 'application',
-          responsibilities: ['Authenticate users', 'Issue tokens'],
-          dependencies: ['UserRepository'],
-        },
-        {
-          name: 'UserRepository',
-          layer: 'infrastructure',
-          responsibilities: ['Persist user data', 'Query users'],
-          dependencies: [],
-        },
-        {
-          name: 'AuthController',
-          layer: 'interface',
-          responsibilities: ['Handle HTTP requests', 'Validate input'],
-          dependencies: ['AuthService'],
-        },
-      ],
-      dependencyGraph: [
-        { from: 'AuthController', to: 'AuthService' },
-        { from: 'AuthService', to: 'UserRepository' },
-      ],
-      boundedContexts: [
-        {
-          name: 'Identity',
-          aggregates: ['User', 'Session'],
-          responsibilities: ['User authentication', 'Token management'],
-        },
-      ],
-      solidNotes: [
-        'AuthService depends on UserRepository interface (DIP)',
-        'Each component has single responsibility (SRP)',
-      ],
+      acceptanceCriteria: ['WHEN a user submits valid credentials THEN the system SHALL return a JWT token'],
+      constraints: ['Passwords must be hashed with bcrypt'],
+      dependencies: ['PostgreSQL database'],
     });
 
     const MOCK_TASKS = JSON.stringify({
@@ -166,104 +258,63 @@ export class MockLLMClient implements LLMClient {
           ],
           dependsOn: [],
         },
-        {
-          id: 'T-2',
-          title: 'Implement AuthService',
-          description: 'Login and token issuance logic',
-          complexity: 3,
-          acceptanceCriteria: [
-            {
-              action: 'Call login with valid credentials',
-              expectedResult: 'JWT token returned',
-              passFailCondition: 'Token contains user ID and expiry',
-            },
-          ],
-          dependsOn: ['T-1'],
-        },
-        {
-          id: 'T-3',
-          title: 'Create login endpoint',
-          description: 'POST /auth/login route handler',
-          complexity: 2,
-          acceptanceCriteria: [
-            {
-              action: 'POST valid credentials',
-              expectedResult: '200 with token',
-              passFailCondition: 'Invalid credentials return 401',
-            },
-          ],
-          dependsOn: ['T-2'],
-        },
       ],
-      dependencyOrder: [['T-1'], ['T-2'], ['T-3']],
+      dependencyOrder: [['T-1']],
       traceabilityCoverage: 95,
     });
 
-    const MOCK_REVIEW_SUMMARY = JSON.stringify({
-      projectSummary: 'A modular Node.js backend application with Express and PostgreSQL',
-      architectureOverview:
-        'Layered architecture with clear separation between API, business logic, and data access',
-      folderResponsibilities: [
-        { folder: 'src/api', responsibility: 'HTTP routes and middleware' },
-        { folder: 'src/db', responsibility: 'Database connection and migrations' },
-      ],
-      detectedPatterns: ['Repository Pattern', 'Middleware Chain', 'Factory Pattern'],
-      potentialProblems: ['No dependency injection container', 'Some modules have high coupling'],
-      technicalDebt: ['Token estimation uses heuristic instead of proper tokenizer'],
-      entryPoints: ['src/index.ts'],
-      criticalComponents: ['src/generation/pipeline.ts — orchestrates all generation'],
-    });
-
-    const MOCK_REVIEW_ENGINEERING = JSON.stringify({
-      codeQuality: { score: 7, observations: ['Consistent naming', 'Good error handling'] },
-      architectureQuality: { score: 8, observations: ['Clean module boundaries'] },
-      solidAdherence: { score: 7, violations: ['Some classes have multiple responsibilities'] },
-      cleanArchitecture: { score: 7, violations: ['Minor dependency direction issue'] },
-      security: { score: 6, observations: ['Basic JWT auth', 'Rate limiting present'] },
-      maintainability: { score: 8, observations: ['Well-organized modules'] },
-      scalability: { score: 6, observations: ['Monolith, but well-structured for extraction'] },
-      readability: { score: 8, observations: ['Clear naming conventions'] },
-      documentation: { score: 5, observations: ['README exists but could be more detailed'] },
-      testQuality: {
-        score: 6,
-        observations: ['Property tests present, integration tests minimal'],
-      },
-      overallMaturity: {
-        score: 7,
-        summary: 'Solid engineering foundation with room for improvement',
-      },
-    });
-
-    const MOCK_REVIEW_IMPROVEMENTS = JSON.stringify({
-      recommendations: [
-        {
-          priority: 'high',
-          problem: 'Limited test coverage',
-          reason: 'Makes refactoring risky',
-          suggestion: 'Add integration tests for API endpoints',
-          effort: 'medium',
-        },
-        {
-          priority: 'medium',
-          problem: 'No proper tokenizer',
-          reason: 'Token estimation is imprecise',
-          suggestion: 'Replace chars/4 heuristic with tiktoken',
-          effort: 'small',
-        },
-        {
-          priority: 'low',
-          problem: 'No streaming',
-          reason: 'Users wait 30-60s with no feedback',
-          suggestion: 'Implement SSE for generation progress',
-          effort: 'large',
-        },
-      ],
-    });
-
-    // Detect which schema is expected based on system prompt content
-    // Check review prompts FIRST (most specific), then vision/risk, then tasks, then architecture
     let defaultResponse = MOCK_SPEC;
     if (
+      request.systemPrompt.includes('intake') ||
+      request.systemPrompt.includes('ambiguity audit')
+    ) {
+      defaultResponse = MOCK_INTAKE;
+    } else if (
+      request.systemPrompt.includes('technical lead synthesizing') ||
+      request.systemPrompt.includes('synthesizing')
+    ) {
+      defaultResponse = MOCK_SYNTHESIS;
+    } else if (
+      request.systemPrompt.includes('requirements analyst') ||
+      request.systemPrompt.includes('clarified requirements')
+    ) {
+      defaultResponse = MOCK_REQUIREMENTS;
+    } else if (
+      request.systemPrompt.includes('agent-architecture') ||
+      request.systemPrompt.includes('produce a structured architecture') ||
+      request.systemPrompt.includes('software architect') ||
+      request.systemPrompt.includes('components')
+    ) {
+      defaultResponse = MOCK_ARCHITECTURE;
+    } else if (
+      request.systemPrompt.includes('security auditor') ||
+      request.systemPrompt.includes('OWASP')
+    ) {
+      defaultResponse = MOCK_SECURITY;
+    } else if (
+      request.systemPrompt.includes('cloud cost analyst') ||
+      request.systemPrompt.includes('cloud financial architect') ||
+      request.systemPrompt.includes('CloudCost')
+    ) {
+      defaultResponse = MOCK_CLOUD_COST;
+    } else if (
+      request.systemPrompt.includes('DevSecOps engineer') ||
+      request.systemPrompt.includes('devsecops') ||
+      request.systemPrompt.includes('CI/CD')
+    ) {
+      defaultResponse = MOCK_DEVSECOPS;
+    } else if (
+      request.systemPrompt.includes('quality assurance engineer') ||
+      request.systemPrompt.includes('test strategy')
+    ) {
+      defaultResponse = MOCK_QA;
+    } else if (
+      request.systemPrompt.includes('synthesizing') ||
+      request.systemPrompt.includes('synthesis') ||
+      request.systemPrompt.includes('executive summary')
+    ) {
+      defaultResponse = MOCK_SYNTHESIS;
+    } else if (
       request.systemPrompt.includes('product vision') ||
       request.systemPrompt.includes('product strategist')
     ) {
@@ -274,30 +325,10 @@ export class MockLLMClient implements LLMClient {
     ) {
       defaultResponse = MOCK_RISK_ASSESSMENT;
     } else if (
-      request.systemPrompt.includes('project understanding summary') ||
-      request.systemPrompt.includes('reviewing a codebase')
-    ) {
-      defaultResponse = MOCK_REVIEW_SUMMARY;
-    } else if (
-      request.systemPrompt.includes('formal engineering review') ||
-      request.systemPrompt.includes('engineering review')
-    ) {
-      defaultResponse = MOCK_REVIEW_ENGINEERING;
-    } else if (
-      request.systemPrompt.includes('improvement recommendations') ||
-      request.systemPrompt.includes('actionable improvement')
-    ) {
-      defaultResponse = MOCK_REVIEW_IMPROVEMENTS;
-    } else if (
       request.systemPrompt.includes('planner') ||
       request.systemPrompt.includes('break it into')
     ) {
       defaultResponse = MOCK_TASKS;
-    } else if (
-      request.systemPrompt.includes('architecture') ||
-      request.systemPrompt.includes('components')
-    ) {
-      defaultResponse = MOCK_ARCHITECTURE;
     }
 
     const responses = this.mockConfig.completionResponses || [defaultResponse];

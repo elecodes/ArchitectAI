@@ -131,7 +131,15 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-                <div className="ml-4 flex items-center gap-5">
+                <div className="ml-4 flex items-center gap-4">
+                  <Link
+                    to={`/project/${p.id}/workflow`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="px-2.5 py-1 text-xs font-mono font-semibold border border-blue-200 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                    title="Run Grill Me Multi-Agent Workflow"
+                  >
+                    Grill Me Workflow →
+                  </Link>
                   <span className="whitespace-nowrap font-mono text-xs tabular-nums text-faint">
                     {new Date(p.createdAt).toLocaleDateString('en-US', {
                       month: 'short',

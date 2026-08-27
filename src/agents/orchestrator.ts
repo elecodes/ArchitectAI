@@ -1,7 +1,7 @@
 import type { AgentRunner } from './runner.js';
 import type { AgentDefinition } from './contract.js';
 import { AgentRunError } from './contract.js';
-import { getAgentDefinition } from './registry.js';
+import { getAgentDefinition } from './index.js';
 import {
   updateWorkflowStatus,
   createStep,
@@ -9,24 +9,33 @@ import {
 } from '../db/repositories/agent-workflow-repo.js';
 import type { AgentWorkflowStatus } from '../db/repositories/agent-workflow-repo.js';
 
+import { normalizeUserIntakeResponse } from './intake-normalizer.js';
+import type { IntakeQuestion } from './schemas/intake.js';
+
 export interface WorkflowInput {
   workflowId: string;
   projectId: string;
   userId: string;
   idea: string;
   context?: string;
+  userIntakeResponse?: {
+    answers: Record<string, string>;
+    skipped?: boolean;
+  };
 }
 
 export interface WorkflowResult {
   workflowId: string;
   status: AgentWorkflowStatus;
   completedSteps: string[];
+  intakeQuestions?: unknown[];
   failedStep?: string;
   error?: string;
 }
 
 export class Orchestrator {
   private readonly phases: string[][] = [
+    ['intake'],
     ['requirements'],
     ['agent-architecture'],
     ['security', 'cloud-cost'],
@@ -38,9 +47,14 @@ export class Orchestrator {
   constructor(private readonly runner: AgentRunner) {}
 
   async execute(input: WorkflowInput, signal?: AbortSignal): Promise<WorkflowResult> {
-    const { workflowId, projectId, userId, idea, context } = input;
+    const { workflowId, projectId, userId, idea, context, userIntakeResponse } = input;
     const completedSteps: string[] = [];
     const contextStore: Record<string, unknown> = { idea, context };
+
+    if (userIntakeResponse) {
+      const questions = (contextStore.intake as any)?.questions as IntakeQuestion[] | undefined;
+      contextStore.architecturalBrief = normalizeUserIntakeResponse(userIntakeResponse.answers, questions);
+    }
 
     try {
       await updateWorkflowStatus(workflowId, 'running');
@@ -65,6 +79,20 @@ export class Orchestrator {
           }
 
           contextStore[agentId] = stepResult.output;
+
+          // Check if Phase 0 Intake requests user interaction and hasn't been answered yet
+          if (agentId === 'intake') {
+            const intakeOutput = stepResult.output as { isSufficient?: boolean; questions?: unknown[] } | undefined;
+            if (intakeOutput && !intakeOutput.isSufficient && !userIntakeResponse) {
+              await updateWorkflowStatus(workflowId, 'awaiting_input');
+              return {
+                workflowId,
+                status: 'awaiting_input',
+                completedSteps,
+                intakeQuestions: intakeOutput.questions ?? [],
+              };
+            }
+          }
         } else {
           const results = await Promise.allSettled(
             phase.map(agentId =>
@@ -153,9 +181,22 @@ export class Orchestrator {
     const input: Record<string, unknown> = {};
 
     switch (def.id) {
+      case 'intake':
+        input.idea = contextStore.idea;
+        input.context = contextStore.context;
+        break;
       case 'requirements':
         input.description = contextStore.idea;
-        input.context = contextStore.context;
+        if (contextStore.architecturalBrief) {
+          const briefStr = typeof contextStore.architecturalBrief === 'string'
+            ? contextStore.architecturalBrief
+            : JSON.stringify(contextStore.architecturalBrief);
+          input.context = contextStore.context
+            ? `${contextStore.context}\n\n[Architectural Brief]: ${briefStr}`
+            : `[Architectural Brief]: ${briefStr}`;
+        } else {
+          input.context = contextStore.context;
+        }
         break;
       case 'agent-architecture':
         input.requirements = contextStore['requirements'];

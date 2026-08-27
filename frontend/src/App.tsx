@@ -6,6 +6,7 @@ import NewProject from './pages/NewProject';
 import Generate from './pages/Generate';
 import Review from './pages/Review';
 import Workflow from './pages/Workflow';
+import Evaluations from './pages/Evaluations';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!getToken()) return <Navigate to="/login" replace />;
@@ -54,6 +55,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Workflow />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/evaluations"
+          element={
+            <ProtectedRoute>
+              <Evaluations />
             </ProtectedRoute>
           }
         />

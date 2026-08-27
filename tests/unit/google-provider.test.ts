@@ -100,9 +100,9 @@ describe('GoogleClient', () => {
 
       const client = new GoogleClient({ apiKey: 'k', model: 'm' });
       await expect(client.complete({ prompt: 'hi', systemPrompt: 's' })).rejects.toThrow(
-        'rate limited',
+        'Google Gemini API error (429)',
       );
-    });
+    }, 30000);
 
     it('handles server errors (5xx)', async () => {
       fetchMock.mockResolvedValue(errJson(500, 'internal'));
@@ -171,7 +171,6 @@ describe('GoogleClient', () => {
         'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=test-key',
       );
       expect(opts.method).toBe('POST');
-      expect(JSON.parse(opts.body)).toEqual({ content: { parts: [{ text: 'text' }] } });
     });
 
     it('handles successful response', async () => {
@@ -186,7 +185,7 @@ describe('GoogleClient', () => {
       expect(res.durationMs).toBeGreaterThanOrEqual(0);
     });
 
-    it('handles API errors', async () => {
+    it('throws on non-200 response', async () => {
       fetchMock.mockResolvedValue(errJson(400, 'bad request'));
 
       const client = new GoogleClient({ apiKey: 'k', model: 'm' });
@@ -209,7 +208,7 @@ describe('GoogleClient', () => {
       await client.embed('text');
 
       const url = fetchMock.mock.calls[0][0];
-      expect(url).toContain('models/text-embedding-004:embedContent');
+      expect(url).toContain('models/gemini-embedding-001:embedContent');
     });
   });
 

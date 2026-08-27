@@ -21,7 +21,7 @@ export const securityAgent: AgentDefinition<SecurityInput, SecurityOutput> = {
   inputSchema: SecurityInputSchema,
   outputSchema: SecuritySchema,
   capabilities: ['rag:read', 'artifact:read:requirements', 'artifact:read:agent_architecture'],
-  timeoutMs: 30_000,
+  timeoutMs: 120_000,
   maxTransientRetries: 2,
 };
 
