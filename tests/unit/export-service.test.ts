@@ -69,6 +69,8 @@ describe('buildPackageZip', () => {
     expect(names).toContain('03-architecture/architecture.md');
     expect(names).toContain('04-diagrams/component.mmd');
     expect(names).toContain('04-diagrams/container.mmd');
+    expect(names).toContain('04-diagrams/architecture-interactive.html');
+    expect(names).toContain('04-diagrams/archify-spec.json');
     expect(names).toContain('06-risk-assessment/risks.md');
     expect(names).toContain('07-tasks/tasks.md');
     expect(names).toContain('04_Metadata.md');

@@ -1,6 +1,8 @@
 import JSZip from 'jszip';
 import type { Artifact } from '../db/repositories/artifact-repo.js';
 import type { DocumentStore } from './document-store.js';
+import { generateArchifyIR, compileArchifyHtml } from '../diagrams/archify.js';
+import type { ArchitectureDocument } from '../generation/schemas.js';
 
 const TYPE_FILE: Record<string, string> = {
   product_vision: '01-product-vision/vision.md',
@@ -40,6 +42,22 @@ export async function buildPackageZip(input: ExportInput): Promise<Buffer> {
   if (diagrams) {
     addDiagramSources(zip, diagrams.content);
   }
+
+  const arch = input.artifacts.find((a) => a.type === 'architecture');
+  if (arch && arch.content) {
+    try {
+      const archDoc = arch.content as unknown as ArchitectureDocument;
+      if (Array.isArray(archDoc.components)) {
+        const ir = generateArchifyIR(archDoc, input.projectName);
+        const html = compileArchifyHtml(ir);
+        zip.file('04-diagrams/architecture-interactive.html', html);
+        zip.file('04-diagrams/archify-spec.json', JSON.stringify(ir, null, 2));
+      }
+    } catch {
+      // Graceful fallback if arch artifact has non-standard shape
+    }
+  }
+
 
   const latest = input.artifacts[0];
   zip.file(
