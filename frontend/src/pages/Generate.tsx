@@ -9,6 +9,7 @@ import { TextAreaField } from '../components/Field';
 import { IconArrowLeft, IconArrowRight, IconDownload, IconCheck, IconUpload } from '../components/icons';
 import MermaidDiagram from '../components/MermaidDiagram';
 import { renderMermaidToSvg, svgToSvgBlob, svgToPngBlob } from '../lib/mermaid';
+import { generateArchifyIR, compileArchifyHtml } from '../lib/archify';
 
 type PipelineStatus = 'idle' | 'running' | 'complete' | 'failed';
 type StageStatus = 'pending' | 'running' | 'complete' | 'failed';
@@ -197,8 +198,17 @@ export default function Generate() {
       zip.file('01-product-vision/vision.md', formatVision(artifacts.vision.content));
     if (artifacts.spec)
       zip.file('02-requirements/requirements.md', formatSpec(artifacts.spec.content));
-    if (artifacts.architecture)
+    if (artifacts.architecture) {
       zip.file('03-architecture/architecture.md', formatArch(artifacts.architecture.content));
+      try {
+        const ir = generateArchifyIR(artifacts.architecture.content, name);
+        const html = compileArchifyHtml(ir);
+        zip.file('04-diagrams/architecture-interactive.html', html);
+        zip.file('04-diagrams/archify-spec.json', JSON.stringify(ir, null, 2));
+      } catch {
+        // Archify interactive export fallback
+      }
+    }
     if (artifacts.diagrams) {
       const d = artifacts.diagrams.content;
       const sources: Record<string, string> = {};
