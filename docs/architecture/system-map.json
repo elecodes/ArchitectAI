@@ -1,0 +1,367 @@
+{
+  "version": "2.17.0",
+  "meta": {
+    "title": "ArchitectAI v1.6.0 Architecture System Map",
+    "description": "Interactive Archify System Map for ArchitectAI v1.6.0 Architecture System Map",
+    "preset": "signal-flow",
+    "theme": "dark",
+    "solidNotes": [
+      "Single Responsibility Principle: Each agent has an explicit, single responsibility and Zod schema",
+      "Open/Closed Principle: LLMProviderFactory allows adding new providers without mutating core agent logic",
+      "Dependency Inversion Principle: High-level orchestrator depends on abstract AgentRunner infrastructure"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "expressapi",
+      "label": "ExpressAPI",
+      "role": "interface",
+      "layer": "interface",
+      "responsibilities": [
+        "Expose REST API endpoints for generation, review, export, and telemetry",
+        "Handle JWT Authentication and Rate Limiting",
+        "Serve React frontend static assets"
+      ]
+    },
+    {
+      "id": "agentorchestrator",
+      "label": "AgentOrchestrator",
+      "role": "application",
+      "layer": "application",
+      "responsibilities": [
+        "Coordinate execution of the 7 typed agents in sequential and parallel forks",
+        "Manage workflow state, safe-stop gates, and execution graph"
+      ]
+    },
+    {
+      "id": "agentrunner",
+      "label": "AgentRunner",
+      "role": "application",
+      "layer": "application",
+      "responsibilities": [
+        "Shared agent infrastructure: RAG context fitting, Zod validation, retry, timeout",
+        "Capability whitelist enforcement (OWASP LLM06 Excessive Agency mitigation)"
+      ]
+    },
+    {
+      "id": "requirementsagent",
+      "label": "RequirementsAgent",
+      "role": "domain",
+      "layer": "domain",
+      "responsibilities": [
+        "Generate functional requirements, constraints, assumptions, and acceptance criteria"
+      ]
+    },
+    {
+      "id": "architectureagent",
+      "label": "ArchitectureAgent",
+      "role": "domain",
+      "layer": "domain",
+      "responsibilities": [
+        "Design system components, bounded contexts, layer responsibilities, and SOLID notes"
+      ]
+    },
+    {
+      "id": "securityagent",
+      "label": "SecurityAgent",
+      "role": "domain",
+      "layer": "domain",
+      "responsibilities": [
+        "Perform threat modeling, OWASP LLM risk analysis, and security controls"
+      ]
+    },
+    {
+      "id": "cloudcostagent",
+      "label": "CloudCostAgent",
+      "role": "domain",
+      "layer": "domain",
+      "responsibilities": [
+        "Produce cloud infrastructure topology, AWS/GCP resource choices, and cost safety estimates"
+      ]
+    },
+    {
+      "id": "devsecopsagent",
+      "label": "DevSecOpsAgent",
+      "role": "domain",
+      "layer": "domain",
+      "responsibilities": [
+        "Define CI/CD pipelines, containerization specs, and deployment runbooks"
+      ]
+    },
+    {
+      "id": "qaagent",
+      "label": "QAAgent",
+      "role": "domain",
+      "layer": "domain",
+      "responsibilities": [
+        "Formulate automated test plans, E2E scenarios, and test data requirements"
+      ]
+    },
+    {
+      "id": "synthesisagent",
+      "label": "SynthesisAgent",
+      "role": "domain",
+      "layer": "domain",
+      "responsibilities": [
+        "Aggregate outputs into a cohesive engineering package and generate Mermaid + Archify diagrams"
+      ]
+    },
+    {
+      "id": "archifyengine",
+      "label": "ArchifyEngine",
+      "role": "domain",
+      "layer": "domain",
+      "responsibilities": [
+        "Transform ArchitectureDocument to Archify JSON IR and compile interactive HTML maps & diffs"
+      ]
+    },
+    {
+      "id": "llmproviderfactory",
+      "label": "LLMProviderFactory",
+      "role": "infrastructure",
+      "layer": "infrastructure",
+      "responsibilities": [
+        "Provider abstraction for Google Gemini, OpenAI, Bedrock, Groq, OpenRouter, Ollama, Mock"
+      ]
+    },
+    {
+      "id": "documentstore",
+      "label": "DocumentStore",
+      "role": "infrastructure",
+      "layer": "infrastructure",
+      "responsibilities": [
+        "Store generated artifacts on Local Filesystem or AWS S3"
+      ]
+    },
+    {
+      "id": "postgresdatabase",
+      "label": "PostgresDatabase",
+      "role": "database",
+      "layer": "infrastructure",
+      "responsibilities": [
+        "Persist projects, generation telemetry, golden datasets, and pgvector embeddings"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_0_expressapi_agentorchestrator",
+      "from": "expressapi",
+      "to": "agentorchestrator",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_1_agentorchestrator_requirementsagent",
+      "from": "agentorchestrator",
+      "to": "requirementsagent",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_2_agentorchestrator_architectureagent",
+      "from": "agentorchestrator",
+      "to": "architectureagent",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_3_agentorchestrator_securityagent",
+      "from": "agentorchestrator",
+      "to": "securityagent",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_4_agentorchestrator_cloudcostagent",
+      "from": "agentorchestrator",
+      "to": "cloudcostagent",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_5_agentorchestrator_devsecopsagent",
+      "from": "agentorchestrator",
+      "to": "devsecopsagent",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_6_agentorchestrator_qaagent",
+      "from": "agentorchestrator",
+      "to": "qaagent",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_7_agentorchestrator_synthesisagent",
+      "from": "agentorchestrator",
+      "to": "synthesisagent",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_8_requirementsagent_agentrunner",
+      "from": "requirementsagent",
+      "to": "agentrunner",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_9_architectureagent_agentrunner",
+      "from": "architectureagent",
+      "to": "agentrunner",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_10_securityagent_agentrunner",
+      "from": "securityagent",
+      "to": "agentrunner",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_11_cloudcostagent_agentrunner",
+      "from": "cloudcostagent",
+      "to": "agentrunner",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_12_devsecopsagent_agentrunner",
+      "from": "devsecopsagent",
+      "to": "agentrunner",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_13_qaagent_agentrunner",
+      "from": "qaagent",
+      "to": "agentrunner",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_14_synthesisagent_agentrunner",
+      "from": "synthesisagent",
+      "to": "agentrunner",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_15_synthesisagent_archifyengine",
+      "from": "synthesisagent",
+      "to": "archifyengine",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_16_agentrunner_llmproviderfactory",
+      "from": "agentrunner",
+      "to": "llmproviderfactory",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_17_expressapi_documentstore",
+      "from": "expressapi",
+      "to": "documentstore",
+      "label": "uses",
+      "flowType": "sync"
+    },
+    {
+      "id": "edge_18_expressapi_postgresdatabase",
+      "from": "expressapi",
+      "to": "postgresdatabase",
+      "label": "uses",
+      "flowType": "sync"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "agent_system_context",
+      "name": "Agent System Context",
+      "nodes": [
+        "agentorchestrator",
+        "agentrunner",
+        "requirementsagent",
+        "architectureagent",
+        "securityagent",
+        "cloudcostagent",
+        "devsecopsagent",
+        "qaagent",
+        "synthesisagent"
+      ],
+      "responsibilities": [
+        "Multi-agent pipeline generation and execution"
+      ]
+    },
+    {
+      "id": "diagramming_engine_context",
+      "name": "Diagramming Engine Context",
+      "nodes": [
+        "archifyengine"
+      ],
+      "responsibilities": [
+        "JSON IR transformation, interactive HTML compilation, and architecture diffs"
+      ]
+    },
+    {
+      "id": "persistence___infrastructure_context",
+      "name": "Persistence & Infrastructure Context",
+      "nodes": [
+        "llmproviderfactory",
+        "documentstore",
+        "postgresdatabase"
+      ],
+      "responsibilities": [
+        "Multi-provider LLM abstraction, document storage, and telemetry database"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "full-flow",
+      "title": "Full System Interaction",
+      "description": "Step-by-step traversal of system components and dependencies",
+      "activeNodes": [
+        "expressapi",
+        "agentorchestrator",
+        "agentrunner",
+        "requirementsagent",
+        "architectureagent",
+        "securityagent",
+        "cloudcostagent",
+        "devsecopsagent",
+        "qaagent",
+        "synthesisagent",
+        "archifyengine",
+        "llmproviderfactory",
+        "documentstore",
+        "postgresdatabase"
+      ],
+      "activeEdges": [
+        "edge_0_expressapi_agentorchestrator",
+        "edge_1_agentorchestrator_requirementsagent",
+        "edge_2_agentorchestrator_architectureagent",
+        "edge_3_agentorchestrator_securityagent",
+        "edge_4_agentorchestrator_cloudcostagent",
+        "edge_5_agentorchestrator_devsecopsagent",
+        "edge_6_agentorchestrator_qaagent",
+        "edge_7_agentorchestrator_synthesisagent",
+        "edge_8_requirementsagent_agentrunner",
+        "edge_9_architectureagent_agentrunner",
+        "edge_10_securityagent_agentrunner",
+        "edge_11_cloudcostagent_agentrunner",
+        "edge_12_devsecopsagent_agentrunner",
+        "edge_13_qaagent_agentrunner",
+        "edge_14_synthesisagent_agentrunner",
+        "edge_15_synthesisagent_archifyengine",
+        "edge_16_agentrunner_llmproviderfactory",
+        "edge_17_expressapi_documentstore",
+        "edge_18_expressapi_postgresdatabase"
+      ]
+    }
+  ]
+}
