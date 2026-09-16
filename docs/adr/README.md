@@ -23,6 +23,14 @@ ADRs document significant architectural decisions, their context, the decision m
 | [0013](0013-local-first-provider-agnostic-architecture.md)  | Local-First, Provider-Agnostic AI Architecture  | Accepted   | 2026-08-04 |
 | [0014](0014-llm-security-mitigations.md)                     | LLM Security Mitigations                        | Accepted   | 2026-08-05 |
 | [0015](0015-optional-aws-integrations.md)                    | AWS Integrations Are Optional                   | Accepted   | 2026-08-10 |
+| [0016](0016-security-production-hardening.md)             | Security & Production Hardening                 | Accepted   | 2026-08-11 |
+| [0017](0017-agent-system-architecture.md)                  | Agent System Architecture                       | Accepted   | 2026-08-12 |
+| [0018](0018-lightweight-orchestrator.md)                   | Lightweight Orchestrator                        | Accepted   | 2026-08-12 |
+| [0019](0019-explicit-agent-contracts.md)                   | Explicit Agent Contracts                        | Accepted   | 2026-08-12 |
+| [0020](0020-capability-based-tools.md)                     | Capability-Based Tools                          | Accepted   | 2026-08-12 |
+| [0021](0021-limited-parallelism.md)                        | Limited Parallelism                             | Accepted   | 2026-08-13 |
+| [0022](0022-multi-provider-llm-expansion.md)              | Multi-Provider LLM Expansion                    | Accepted   | 2026-09-01 |
+| [0023](0023-archify-interactive-diagrams-and-architecture-diff.md) | Archify Interactive Diagrams & Diff     | Accepted   | 2026-09-16 |
 
 ## How to Add a New ADR
 

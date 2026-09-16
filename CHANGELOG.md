@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.7.0] - 2026-09-16
+
+### Added
+
+- Archify diagramming engine integration (`src/diagrams/archify.ts`): JSON IR generation and self-contained interactive HTML map compilation.
+- Interactive HTML diagram export (`04-diagrams/architecture-interactive.html` and `04-diagrams/archify-spec.json`) added to client-side and server-side `.zip` package downloads.
+- Architecture Diff engine (`src/diagrams/archify-diff.ts` & `src/review/diff-service.ts`): deterministic Before / Delta / After snapshot comparison with color-coded node and edge change detection.
+- Archify Agent Skill installed and documented (`docs/skills/archify-skill.md`) for AI coding agents.
+- ArchitectAI official interactive system map (`docs/architecture/system-map.html` & `docs/architecture/system-map.json`).
+- ADR-0023: Decision record for Archify interactive diagrams and architecture diff integration.
+- Unit test suite for Archify IR generation, HTML compilation, and snapshot diffing (`tests/unit/archify.test.ts`, `tests/unit/archify-diff.test.ts`).
+
 ## [1.5.0] - 2026-08-13
 
 ### Added

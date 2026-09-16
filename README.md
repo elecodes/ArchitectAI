@@ -8,7 +8,7 @@ ArchitectAI is an AI Software Architect that generates complete engineering pack
 
 ## Current Status
 
-**Version: 1.6.0** — Evaluation, Feedback & Model Intelligence.
+**Version: 1.7.0** — Archify Interactive Diagrams & Architecture Diff.
 
 ArchitectAI can today:
 
@@ -16,6 +16,8 @@ ArchitectAI can today:
 - Run a multi-agent generation pipeline: 7 typed agents coordinated by a lightweight orchestrator
 - Generate structured requirements, architecture documents, security reviews, cost estimates, and implementation task breakdowns
 - Render C4-style Mermaid diagrams (component, container, data flow, context) with SVG/PNG export
+- Compile interactive, self-contained system architecture maps via Archify (`architecture-interactive.html`)
+- Compare architecture snapshots and repository states with visual Before / Delta / After diffs
 - Export a complete engineering package as a .zip file (client-side) or to a configured storage provider (local filesystem or S3)
 - Work with OpenRouter, OpenAI, Ollama, Bedrock, or a mock provider
 - Record generation telemetry (Postgres, optionally mirrored to CloudWatch)
@@ -30,12 +32,17 @@ See [ROADMAP.md](ROADMAP.md) for planned features.
 - **Task Breakdown** — Implementation tasks with complexity estimates and dependency graphs
 - **Product Vision** — Vision statement, problem, target users, business goals, success metrics
 - **Risk Assessment** — Categorized, severity-tagged risks with mitigations
-- **Mermaid Diagrams** — Component, container, data flow, and context diagrams with SVG/PNG export
+- **Mermaid & Archify Diagrams** — Static C4 diagrams plus interactive HTML maps with layer highlighting and filtering
+- **Architecture Diff (v1.7.0)** — Structural Before / Delta / After visual comparisons for code reviews and PR audits
 - **Export Package** — Client-side .zip download or store on local filesystem / S3
 - **Provider Agnostic** — OpenRouter, OpenAI, Ollama, AWS Bedrock, or mock
 - **RAG-Enhanced** — Index your project files for context-aware generation
 - **Telemetry** — Per-generation metrics to Postgres, optionally mirrored to CloudWatch
-- **Evaluation & Model Intelligence (v1.6.0)** — Versioned golden software ideas dataset, Level 1 deterministic (Zod) and Level 2 semantic (LLM-as-Judge) evaluation, latency/cost benchmarking, and prompt versioning comparisons
+- **Evaluation & Model Intelligence** — Versioned golden software ideas dataset, Level 1 deterministic (Zod) and Level 2 semantic (LLM-as-Judge) evaluation, latency/cost benchmarking, and prompt versioning comparisons
+
+### Archify Engine & System Maps (v1.7.0)
+
+Integrated [Archify](https://github.com/tt-a1i/archify) engine produces structured JSON IR (`generateArchifyIR`) and self-contained interactive HTML system maps (`compileArchifyHtml`). Also features a visual snapshot comparison engine (`compareArchifyIR` / `compileArchifyDiffHtml`) that computes color-coded architectural diffs (*Before vs Delta vs After*) for PR reviews. See `docs/adr/0023-archify-interactive-diagrams-and-architecture-diff.md`.
 
 ### Agent System & Model Intelligence (v1.6.0)
 
