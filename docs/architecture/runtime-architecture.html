@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArchitectAI — High-Level Runtime Architecture — Archify System Map</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.2);
+      --interface: #a855f7;
+      --application: #3b82f6;
+      --domain: #10b981;
+      --infrastructure: #f59e0b;
+      --database: #ec4899;
+    }
+
+    body.light {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #0284c7;
+      --accent-glow: rgba(2, 132, 199, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    header {
+      background-color: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title-group h1 { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+    .title-group p { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .title-group .created-at { font-size: 0.75rem; color: var(--text-muted); opacity: 0.85; margin-top: 0.3rem; font-family: monospace; }
+
+    .controls { display: flex; gap: 0.75rem; align-items: center; }
+    .btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .search-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      width: 200px;
+    }
+    .search-input:focus { outline: none; border-color: var(--accent); }
+
+    main { display: flex; flex: 1; overflow: hidden; }
+
+    #viewport {
+      flex: 1;
+      position: relative;
+      background-image: radial-gradient(var(--border) 1px, transparent 1px);
+      background-size: 24px 24px;
+      overflow: auto;
+      padding: 3rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .diagram-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .node-card {
+      background-color: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .node-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+    .node-card.highlighted {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    .node-card.dimmed { opacity: 0.35; }
+
+    .node-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    .badge-interface { background: rgba(168, 85, 247, 0.15); color: var(--interface); }
+    .badge-application { background: rgba(59, 130, 246, 0.15); color: var(--application); }
+    .badge-domain { background: rgba(16, 185, 129, 0.15); color: var(--domain); }
+    .badge-infrastructure { background: rgba(245, 158, 11, 0.15); color: var(--infrastructure); }
+    .badge-database { background: rgba(236, 72, 153, 0.15); color: var(--database); }
+
+    .node-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .node-resp-list { list-style: none; font-size: 0.85rem; color: var(--text-muted); }
+    .node-resp-list li { margin-bottom: 0.3rem; padding-left: 0.8rem; position: relative; }
+    .node-resp-list li::before { content: "•"; position: absolute; left: 0; color: var(--accent); }
+
+    sidebar {
+      width: 320px;
+      background-color: var(--panel);
+      border-left: 1px solid var(--border);
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .sidebar-section { margin-bottom: 1.5rem; }
+    .sidebar-section h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem; }
+
+    .edge-list, .cluster-list { list-style: none; font-size: 0.85rem; }
+    .edge-item {
+      padding: 0.5rem 0.75rem;
+      background: var(--bg);
+      border-radius: 6px;
+      margin-bottom: 0.4rem;
+      border: 1px solid var(--border);
+    }
+    .edge-arrow { color: var(--accent); font-weight: bold; margin: 0 0.3rem; }
+
+    .solid-note {
+      background: rgba(56, 189, 248, 0.1);
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 0.8rem;
+      font-size: 0.82rem;
+      margin-bottom: 0.5rem;
+      border-radius: 0 6px 6px 0;
+    }
+  </style>
+</head>
+<body class="dark">
+  <header>
+    <div class="title-group">
+      <h1>ArchitectAI — High-Level Runtime Architecture</h1>
+      <p>12 core components, primary request path, trust boundaries, and card-level runtime details.</p>
+      <div class="created-at">Created: 2026-09-17T12:27:46.202Z</div>
+    </div>
+    <div class="controls">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search node..." oninput="filterNodes(this.value)">
+      <button class="btn" onclick="toggleTheme()">Toggle Theme</button>
+      <button class="btn" onclick="exportJSON()">Export IR JSON</button>
+      <button class="btn" onclick="downloadHTML()">Download HTML</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="viewport">
+      <div class="diagram-container" id="diagramContainer">
+        
+          <div class="node-card" id="node-react_frontend" data-id="react_frontend">
+            <span class="node-badge badge-interface">interface</span>
+            <div class="node-title">1. React Frontend (SPA)</div>
+            <ul class="node-resp-list">
+              <li>User interface for prompt intake, model selection, and real-time telemetry tracking</li><li>Client-side ZIP package compilation via JSZip & Archify HTML renderer</li><li>Untrusted browser context — enforces local JWT session storage</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-express_api" data-id="express_api">
+            <span class="node-badge badge-interface">interface</span>
+            <div class="node-title">2. Express API Gateway</div>
+            <ul class="node-resp-list">
+              <li>Authentication (JWT verification) & request correlation ID injection (X-Request-ID)</li><li>Rate limiting (5 req/min for index & workflow endpoints)</li><li>Path containment & input sanitization before dispatching to orchestrator</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-workflow_orchestrator" data-id="workflow_orchestrator">
+            <span class="node-badge badge-application">application</span>
+            <div class="node-title">3. Workflow Orchestrator</div>
+            <ul class="node-resp-list">
+              <li>Coordinates 7 typed agents in sequential and parallel execution graph</li><li>Handles safe-stop gates, state persistence, and telemetry recording</li><li>Runs Security & Cloud/Cost agents in parallel after Architecture phase</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-agent_runner" data-id="agent_runner">
+            <span class="node-badge badge-application">application</span>
+            <div class="node-title">4. AgentRunner Infrastructure</div>
+            <ul class="node-resp-list">
+              <li>Shared agent infrastructure: RAG context fitting, Zod validation, retry, timeout</li><li>OWASP LLM06 Excessive Agency mitigation via capability whitelist enforcement</li><li>Prompt versioning and provenance tracking</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-requirements_agent" data-id="requirements_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">5. Requirements Agent</div>
+            <ul class="node-resp-list">
+              <li>Transforms raw user prompt into structured functional requirements</li><li>Generates acceptance criteria, constraints, and assumptions</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-architecture_agent" data-id="architecture_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">6. Architecture Agent</div>
+            <ul class="node-resp-list">
+              <li>Designs component architecture, layers, bounded contexts, and SOLID compliance</li><li>Generates static Mermaid C4 diagrams and Archify JSON IR</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-security_agent" data-id="security_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">7. Security Agent</div>
+            <ul class="node-resp-list">
+              <li>Performs STRIDE threat modeling and OWASP Top 10 LLM security analysis</li><li>Produces actionable mitigation strategies and authentication controls</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-synthesis_agent" data-id="synthesis_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">8. Synthesis Agent</div>
+            <ul class="node-resp-list">
+              <li>Consolidates multi-agent outputs into a cohesive engineering specification</li><li>Ensures cross-document consistency before final export package creation</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-rag_indexer" data-id="rag_indexer">
+            <span class="node-badge badge-infrastructure">infrastructure</span>
+            <div class="node-title">9. RAG Vector Indexer</div>
+            <ul class="node-resp-list">
+              <li>Indexes codebase/project files into fixed-size chunks</li><li>Performs vector similarity search to enrich agent prompt contexts</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-llm_provider_adapter" data-id="llm_provider_adapter">
+            <span class="node-badge badge-external">external</span>
+            <div class="node-title">10. LLM Provider Adapter</div>
+            <ul class="node-resp-list">
+              <li>Provider-agnostic abstraction for OpenRouter, OpenAI, Bedrock, Ollama, Groq, Google</li><li>Handles API keys, model fallbacks, rate limit backoffs, and token metrics</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-postgres_db" data-id="postgres_db">
+            <span class="node-badge badge-database">database</span>
+            <div class="node-title">11. Postgres & PGVector DB</div>
+            <ul class="node-resp-list">
+              <li>Stores generation telemetry, workflow execution states, and audit logs</li><li>Executes cosine similarity searches on vector embeddings (1536 dims)</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-export_service" data-id="export_service">
+            <span class="node-badge badge-infrastructure">infrastructure</span>
+            <div class="node-title">12. Export Service & Storage</div>
+            <ul class="node-resp-list">
+              <li>Assembles final ZIP packages (specs, diagrams, interactive HTML, task lists)</li><li>Supports local filesystem storage or opt-in AWS S3 bucket persistence</li>
+            </ul>
+          </div>
+        
+      </div>
+    </div>
+
+    <sidebar>
+      <div class="sidebar-section">
+        <h3>Bounded Contexts</h3>
+        <ul class="cluster-list">
+          
+            <li class="edge-item">
+              <strong>Client Trust Boundary (Untrusted Browser)</strong> (1 nodes)
+            </li>
+          
+            <li class="edge-item">
+              <strong>Application Server Trust Boundary (Trusted Core)</strong> (10 nodes)
+            </li>
+          
+            <li class="edge-item">
+              <strong>External Cloud Services Boundary (Third-Party APIs)</strong> (1 nodes)
+            </li>
+          
+        </ul>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Dependencies (8)</h3>
+        <ul class="edge-list">
+          
+            <li class="edge-item">
+              <span>react_frontend</span>
+              <span class="edge-arrow">➔</span>
+              <span>express_api</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>express_api</span>
+              <span class="edge-arrow">➔</span>
+              <span>workflow_orchestrator</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>workflow_orchestrator</span>
+              <span class="edge-arrow">➔</span>
+              <span>agent_runner</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>agent_runner</span>
+              <span class="edge-arrow">➔</span>
+              <span>architecture_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>architecture_agent</span>
+              <span class="edge-arrow">➔</span>
+              <span>llm_provider_adapter</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>architecture_agent</span>
+              <span class="edge-arrow">➔</span>
+              <span>rag_indexer</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>rag_indexer</span>
+              <span class="edge-arrow">➔</span>
+              <span>postgres_db</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>workflow_orchestrator</span>
+              <span class="edge-arrow">➔</span>
+              <span>export_service</span>
+            </li>
+          
+        </ul>
+      </div>
+
+      
+      <div class="sidebar-section">
+        <h3>SOLID Compliance</h3>
+        <div class="solid-note">Single Responsibility: Agents are decoupled with Zod schemas and versioned prompts.</div><div class="solid-note">Open/Closed: Provider adapters allow new LLM models without touching core orchestrator.</div><div class="solid-note">Dependency Inversion: Higher-level orchestrator depends on abstract LLMClient interface.</div>
+      </div>
+      
+    </sidebar>
+  </main>
+
+  <script>
+    const irData = {
+  "version": "2.17.0",
+  "meta": {
+    "title": "ArchitectAI — High-Level Runtime Architecture",
+    "description": "12 core components, primary request path, trust boundaries, and card-level runtime details.",
+    "preset": "signal-flow",
+    "theme": "dark",
+    "solidNotes": [
+      "Single Responsibility: Agents are decoupled with Zod schemas and versioned prompts.",
+      "Open/Closed: Provider adapters allow new LLM models without touching core orchestrator.",
+      "Dependency Inversion: Higher-level orchestrator depends on abstract LLMClient interface."
+    ],
+    "createdAt": "2026-09-17T12:27:46.202Z"
+  },
+  "nodes": [
+    {
+      "id": "react_frontend",
+      "label": "1. React Frontend (SPA)",
+      "role": "interface",
+      "layer": "Presentation (Client)",
+      "boundedContext": "Client Trust Boundary",
+      "responsibilities": [
+        "User interface for prompt intake, model selection, and real-time telemetry tracking",
+        "Client-side ZIP package compilation via JSZip & Archify HTML renderer",
+        "Untrusted browser context — enforces local JWT session storage"
+      ]
+    },
+    {
+      "id": "express_api",
+      "label": "2. Express API Gateway",
+      "role": "interface",
+      "layer": "API Gateway & Security",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Authentication (JWT verification) & request correlation ID injection (X-Request-ID)",
+        "Rate limiting (5 req/min for index & workflow endpoints)",
+        "Path containment & input sanitization before dispatching to orchestrator"
+      ]
+    },
+    {
+      "id": "workflow_orchestrator",
+      "label": "3. Workflow Orchestrator",
+      "role": "application",
+      "layer": "Orchestration Engine",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Coordinates 7 typed agents in sequential and parallel execution graph",
+        "Handles safe-stop gates, state persistence, and telemetry recording",
+        "Runs Security & Cloud/Cost agents in parallel after Architecture phase"
+      ]
+    },
+    {
+      "id": "agent_runner",
+      "label": "4. AgentRunner Infrastructure",
+      "role": "application",
+      "layer": "Agent Execution Container",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Shared agent infrastructure: RAG context fitting, Zod validation, retry, timeout",
+        "OWASP LLM06 Excessive Agency mitigation via capability whitelist enforcement",
+        "Prompt versioning and provenance tracking"
+      ]
+    },
+    {
+      "id": "requirements_agent",
+      "label": "5. Requirements Agent",
+      "role": "domain",
+      "layer": "Domain AI Agent",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Transforms raw user prompt into structured functional requirements",
+        "Generates acceptance criteria, constraints, and assumptions"
+      ]
+    },
+    {
+      "id": "architecture_agent",
+      "label": "6. Architecture Agent",
+      "role": "domain",
+      "layer": "Domain AI Agent",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Designs component architecture, layers, bounded contexts, and SOLID compliance",
+        "Generates static Mermaid C4 diagrams and Archify JSON IR"
+      ]
+    },
+    {
+      "id": "security_agent",
+      "label": "7. Security Agent",
+      "role": "domain",
+      "layer": "Domain AI Agent",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Performs STRIDE threat modeling and OWASP Top 10 LLM security analysis",
+        "Produces actionable mitigation strategies and authentication controls"
+      ]
+    },
+    {
+      "id": "synthesis_agent",
+      "label": "8. Synthesis Agent",
+      "role": "domain",
+      "layer": "Domain AI Agent",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Consolidates multi-agent outputs into a cohesive engineering specification",
+        "Ensures cross-document consistency before final export package creation"
+      ]
+    },
+    {
+      "id": "rag_indexer",
+      "label": "9. RAG Vector Indexer",
+      "role": "infrastructure",
+      "layer": "Knowledge Retrieval",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Indexes codebase/project files into fixed-size chunks",
+        "Performs vector similarity search to enrich agent prompt contexts"
+      ]
+    },
+    {
+      "id": "llm_provider_adapter",
+      "label": "10. LLM Provider Adapter",
+      "role": "external",
+      "layer": "External Cloud AI",
+      "boundedContext": "External Cloud Services Boundary",
+      "responsibilities": [
+        "Provider-agnostic abstraction for OpenRouter, OpenAI, Bedrock, Ollama, Groq, Google",
+        "Handles API keys, model fallbacks, rate limit backoffs, and token metrics"
+      ]
+    },
+    {
+      "id": "postgres_db",
+      "label": "11. Postgres & PGVector DB",
+      "role": "database",
+      "layer": "Data Persistence",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Stores generation telemetry, workflow execution states, and audit logs",
+        "Executes cosine similarity searches on vector embeddings (1536 dims)"
+      ]
+    },
+    {
+      "id": "export_service",
+      "label": "12. Export Service & Storage",
+      "role": "infrastructure",
+      "layer": "Storage & Export",
+      "boundedContext": "Application Server Trust Boundary",
+      "responsibilities": [
+        "Assembles final ZIP packages (specs, diagrams, interactive HTML, task lists)",
+        "Supports local filesystem storage or opt-in AWS S3 bucket persistence"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "primary_1_2",
+      "from": "react_frontend",
+      "to": "express_api",
+      "label": "1. HTTP POST /api/agent-workflows (JWT Auth)",
+      "flowType": "sync"
+    },
+    {
+      "id": "primary_2_3",
+      "from": "express_api",
+      "to": "workflow_orchestrator",
+      "label": "2. Dispatches workflow execution graph",
+      "flowType": "sync"
+    },
+    {
+      "id": "primary_3_4",
+      "from": "workflow_orchestrator",
+      "to": "agent_runner",
+      "label": "3. Invokes shared agent execution container",
+      "flowType": "sync"
+    },
+    {
+      "id": "primary_4_6",
+      "from": "agent_runner",
+      "to": "architecture_agent",
+      "label": "4. Executes Architecture Agent prompt phase",
+      "flowType": "sync"
+    },
+    {
+      "id": "primary_6_10",
+      "from": "architecture_agent",
+      "to": "llm_provider_adapter",
+      "label": "5. Queries LLM model (OpenRouter/Bedrock/Groq)",
+      "flowType": "sync"
+    },
+    {
+      "id": "primary_6_9",
+      "from": "architecture_agent",
+      "to": "rag_indexer",
+      "label": "6. Fetches relevant project RAG context",
+      "flowType": "sync"
+    },
+    {
+      "id": "primary_9_11",
+      "from": "rag_indexer",
+      "to": "postgres_db",
+      "label": "7. Vector search query (pgvector)",
+      "flowType": "data"
+    },
+    {
+      "id": "primary_3_12",
+      "from": "workflow_orchestrator",
+      "to": "export_service",
+      "label": "8. Compiles final engineering ZIP & Archify HTML",
+      "flowType": "sync"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "client_boundary",
+      "name": "Client Trust Boundary (Untrusted Browser)",
+      "nodes": [
+        "react_frontend"
+      ],
+      "responsibilities": [
+        "User input handling",
+        "JWT storage",
+        "Client-side ZIP rendering"
+      ]
+    },
+    {
+      "id": "app_boundary",
+      "name": "Application Server Trust Boundary (Trusted Core)",
+      "nodes": [
+        "express_api",
+        "workflow_orchestrator",
+        "agent_runner",
+        "requirements_agent",
+        "architecture_agent",
+        "security_agent",
+        "synthesis_agent",
+        "rag_indexer",
+        "postgres_db",
+        "export_service"
+      ],
+      "responsibilities": [
+        "Authentication",
+        "Workflow state machine",
+        "Security capabilities",
+        "Data persistence"
+      ]
+    },
+    {
+      "id": "external_boundary",
+      "name": "External Cloud Services Boundary (Third-Party APIs)",
+      "nodes": [
+        "llm_provider_adapter"
+      ],
+      "responsibilities": [
+        "LLM inference APIs",
+        "Cloud provider authentication"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "primary_request_flow",
+      "title": "Primary Request Lifecycle",
+      "description": "Trace of a user request from prompt intake in the React SPA down to multi-agent generation, LLM inference, RAG context enrichment, and ZIP package export.",
+      "activeNodes": [
+        "react_frontend",
+        "express_api",
+        "workflow_orchestrator",
+        "agent_runner",
+        "architecture_agent",
+        "llm_provider_adapter",
+        "rag_indexer",
+        "postgres_db",
+        "export_service"
+      ],
+      "activeEdges": [
+        "primary_1_2",
+        "primary_2_3",
+        "primary_3_4",
+        "primary_4_6",
+        "primary_6_10",
+        "primary_6_9",
+        "primary_9_11",
+        "primary_3_12"
+      ]
+    }
+  ]
+};
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      document.body.classList.toggle('light');
+    }
+
+    function filterNodes(query) {
+      const q = query.toLowerCase().trim();
+      const cards = document.querySelectorAll('.node-card');
+      cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if (!q || text.includes(q)) {
+          card.classList.remove('dimmed');
+          if (q && text.includes(q)) card.classList.add('highlighted');
+          else card.classList.remove('highlighted');
+        } else {
+          card.classList.add('dimmed');
+          card.classList.remove('highlighted');
+        }
+      });
+    }
+
+    async function triggerDownload(content, filename, mimeType) {
+      if (window.showSaveFilePicker) {
+        try {
+          const ext = filename.split('.').pop() || 'html';
+          const acceptMime = mimeType.startsWith('application/json') ? 'application/json' : 'text/html';
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: ext.toUpperCase() + ' File',
+              accept: { [acceptMime]: ['.' + ext] },
+            }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(content);
+          await writable.close();
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+        }
+      }
+
+      try {
+        const blob = new Blob([content], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          if (a.parentNode) a.parentNode.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 500);
+        return;
+      } catch (err) {
+        console.error('Blob download failed:', err);
+      }
+
+      try {
+        await navigator.clipboard.writeText(content);
+        alert('Download blocked by browser policy. File content has been copied to your clipboard!');
+      } catch (e) {
+        alert('Download failed. Please use File > Save Page As in your browser menu.');
+      }
+    }
+
+    async function exportJSON() {
+      const content = JSON.stringify(irData, null, 2);
+      const filename = 'architectai_high_level_runtime_architecture_archify.json';
+      await triggerDownload(content, filename, 'application/json');
+    }
+
+    async function downloadHTML() {
+      const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const filename = 'architectai_high_level_runtime_architecture_archify.html';
+      await triggerDownload(htmlContent, filename, 'text/html');
+    }
+  </script>
+</body>
+</html>

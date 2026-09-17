@@ -165,7 +165,8 @@ const architectAiDoc: ArchitectureDocument = {
 
 console.log('Generating official ArchitectAI System Map with Archify...');
 
-const ir = generateArchifyIR(architectAiDoc, 'ArchitectAI v1.6.0 Architecture System Map');
+const createdAt = new Date().toISOString();
+const ir = generateArchifyIR(architectAiDoc, 'ArchitectAI v1.7.0 Architecture System Map', { createdAt });
 const html = compileArchifyHtml(ir);
 
 const outDir = join(process.cwd(), 'docs', 'architecture');

@@ -46,6 +46,7 @@ describe('Archify Diagram Generator', () => {
       expect(ir.meta.title).toBe('E-Commerce Platform');
       expect(ir.meta.preset).toBe('signal-flow');
       expect(ir.meta.theme).toBe('dark');
+      expect(ir.meta.createdAt).toBeDefined();
       expect(ir.meta.solidNotes).toContain('Single Responsibility enforced on ApiGateway');
 
       expect(ir.nodes).toHaveLength(3);
@@ -76,6 +77,12 @@ describe('Archify Diagram Generator', () => {
       const dbNode = ir.nodes.find((n) => n.id === 'postgresdatabase');
       expect(dbNode?.role).toBe('database');
     });
+
+    it('respects explicit createdAt timestamp option', () => {
+      const timestamp = '2026-09-17T12:00:00.000Z';
+      const ir = generateArchifyIR(sampleArchDoc, 'Timestamped System', { createdAt: timestamp });
+      expect(ir.meta.createdAt).toBe(timestamp);
+    });
   });
 
   describe('compileArchifyHtml', () => {
@@ -94,6 +101,9 @@ describe('Archify Diagram Generator', () => {
       expect(html).toContain('filterNodes');
       expect(html).toContain('toggleTheme');
       expect(html).toContain('exportJSON');
+      expect(html).toContain('downloadHTML');
+      expect(html).toContain('Created:');
+      expect(html).toContain('Download HTML');
     });
   });
 });

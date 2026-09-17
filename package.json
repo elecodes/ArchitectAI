@@ -10,7 +10,10 @@
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "test": "vitest",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "generate:diagrams": "tsx scripts/generate-archify-diagrams.ts",
+    "generate:brain-flow": "tsx scripts/generate-brain-flow.ts",
+    "archify:automate": "tsx scripts/generate-archify-diagrams.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1106.0",

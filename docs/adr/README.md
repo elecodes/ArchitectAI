@@ -31,6 +31,7 @@ ADRs document significant architectural decisions, their context, the decision m
 | [0021](0021-limited-parallelism.md)                        | Limited Parallelism                             | Accepted   | 2026-08-13 |
 | [0022](0022-multi-provider-llm-expansion.md)              | Multi-Provider LLM Expansion                    | Accepted   | 2026-09-01 |
 | [0023](0023-archify-interactive-diagrams-and-architecture-diff.md) | Archify Interactive Diagrams & Diff     | Accepted   | 2026-09-16 |
+| [0024](0024-archify-diagram-automation-creation-date-tracking-html-export.md) | Archify Diagram Automation & HTML Export | Accepted   | 2026-09-17 |
 
 ## How to Add a New ADR
 

@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArchitectAI — AI Agent Brain Cognitive Workflow — Archify System Map</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.2);
+      --interface: #a855f7;
+      --application: #3b82f6;
+      --domain: #10b981;
+      --infrastructure: #f59e0b;
+      --database: #ec4899;
+    }
+
+    body.light {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #0284c7;
+      --accent-glow: rgba(2, 132, 199, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    header {
+      background-color: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title-group h1 { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+    .title-group p { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .title-group .created-at { font-size: 0.75rem; color: var(--text-muted); opacity: 0.85; margin-top: 0.3rem; font-family: monospace; }
+
+    .controls { display: flex; gap: 0.75rem; align-items: center; }
+    .btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .search-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      width: 200px;
+    }
+    .search-input:focus { outline: none; border-color: var(--accent); }
+
+    main { display: flex; flex: 1; overflow: hidden; }
+
+    #viewport {
+      flex: 1;
+      position: relative;
+      background-image: radial-gradient(var(--border) 1px, transparent 1px);
+      background-size: 24px 24px;
+      overflow: auto;
+      padding: 3rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .diagram-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .node-card {
+      background-color: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .node-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+    .node-card.highlighted {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    .node-card.dimmed { opacity: 0.35; }
+
+    .node-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    .badge-interface { background: rgba(168, 85, 247, 0.15); color: var(--interface); }
+    .badge-application { background: rgba(59, 130, 246, 0.15); color: var(--application); }
+    .badge-domain { background: rgba(16, 185, 129, 0.15); color: var(--domain); }
+    .badge-infrastructure { background: rgba(245, 158, 11, 0.15); color: var(--infrastructure); }
+    .badge-database { background: rgba(236, 72, 153, 0.15); color: var(--database); }
+
+    .node-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .node-resp-list { list-style: none; font-size: 0.85rem; color: var(--text-muted); }
+    .node-resp-list li { margin-bottom: 0.3rem; padding-left: 0.8rem; position: relative; }
+    .node-resp-list li::before { content: "•"; position: absolute; left: 0; color: var(--accent); }
+
+    sidebar {
+      width: 320px;
+      background-color: var(--panel);
+      border-left: 1px solid var(--border);
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .sidebar-section { margin-bottom: 1.5rem; }
+    .sidebar-section h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem; }
+
+    .edge-list, .cluster-list { list-style: none; font-size: 0.85rem; }
+    .edge-item {
+      padding: 0.5rem 0.75rem;
+      background: var(--bg);
+      border-radius: 6px;
+      margin-bottom: 0.4rem;
+      border: 1px solid var(--border);
+    }
+    .edge-arrow { color: var(--accent); font-weight: bold; margin: 0 0.3rem; }
+
+    .solid-note {
+      background: rgba(56, 189, 248, 0.1);
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 0.8rem;
+      font-size: 0.82rem;
+      margin-bottom: 0.5rem;
+      border-radius: 0 6px 6px 0;
+    }
+  </style>
+</head>
+<body class="dark">
+  <header>
+    <div class="title-group">
+      <h1>ArchitectAI — AI Agent Brain Cognitive Workflow</h1>
+      <p>7-Agent multi-phase cognitive reasoning pipeline, parallel execution graph, and RAG context memory flow.</p>
+      <div class="created-at">Created: 2026-09-17T12:25:49.755Z</div>
+    </div>
+    <div class="controls">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search node..." oninput="filterNodes(this.value)">
+      <button class="btn" onclick="toggleTheme()">Toggle Theme</button>
+      <button class="btn" onclick="exportJSON()">Export IR JSON</button>
+      <button class="btn" onclick="downloadHTML()">Download HTML</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="viewport">
+      <div class="diagram-container" id="diagramContainer">
+        
+          <div class="node-card" id="node-user_prompt_intake" data-id="user_prompt_intake">
+            <span class="node-badge badge-interface">interface</span>
+            <div class="node-title">0. Prompt Intake & Normalizer</div>
+            <ul class="node-resp-list">
+              <li>Normalizes unstructured user request into an Architectural Brief</li><li>Detects requirement ambiguities and generates interactive intake questions if required</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-requirements_agent" data-id="requirements_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">1. Requirements Agent</div>
+            <ul class="node-resp-list">
+              <li>Formulates functional and non-functional engineering requirements</li><li>Establishes acceptance criteria, priority matrices, and technical constraints</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-architecture_agent" data-id="architecture_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">2. Architecture Agent</div>
+            <ul class="node-resp-list">
+              <li>Designs system component topology, bounded contexts, and SOLID notes</li><li>Compiles initial Archify IR structure and Mermaid C4 diagrams</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-security_agent" data-id="security_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">3. Security Threat Agent (Parallel Fork)</div>
+            <ul class="node-resp-list">
+              <li>Performs STRIDE threat modeling and OWASP Top 10 LLM risk audits</li><li>Generates authentication controls, RBAC policies, and mitigation strategies</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-cloud_cost_agent" data-id="cloud_cost_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">4. Cloud & Cost Agent (Parallel Fork)</div>
+            <ul class="node-resp-list">
+              <li>Maps cloud resource choices across AWS/GCP services</li><li>Calculates cost estimates, scaling thresholds, and cost-safety guards</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-devsecops_agent" data-id="devsecops_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">5. DevSecOps Agent</div>
+            <ul class="node-resp-list">
+              <li>Generates GitHub Actions CI/CD workflows and Docker container specs</li><li>Defines deployment runbooks, health checks, and rollback procedures</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-qa_agent" data-id="qa_agent">
+            <span class="node-badge badge-domain">domain</span>
+            <div class="node-title">6. QA & Testing Agent</div>
+            <ul class="node-resp-list">
+              <li>Formulates automated test strategies, E2E Playwright scenarios, and Vitest unit suites</li><li>Enforces requirement traceability coverage metrics</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-synthesis_agent" data-id="synthesis_agent">
+            <span class="node-badge badge-application">application</span>
+            <div class="node-title">7. Synthesis & Consolidation Engine</div>
+            <ul class="node-resp-list">
+              <li>Consolidates all multi-agent outputs into a unified engineering specification package</li><li>Generates final Archify JSON IR, interactive HTML map, and ZIP bundle</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-rag_memory_context" data-id="rag_memory_context">
+            <span class="node-badge badge-infrastructure">infrastructure</span>
+            <div class="node-title">RAG Context Fitting & Memory Store</div>
+            <ul class="node-resp-list">
+              <li>Shared context store feeding prior agent outputs into downstream prompts</li><li>Performs chunking and vector similarity retrieval over project codebase</li>
+            </ul>
+          </div>
+        
+          <div class="node-card" id="node-llm_factory" data-id="llm_factory">
+            <span class="node-badge badge-external">external</span>
+            <div class="node-title">LLM Provider Factory & Provider Pool</div>
+            <ul class="node-resp-list">
+              <li>Provider abstraction for OpenRouter, OpenAI, Bedrock, Ollama, Groq, Google Gemini</li><li>Enforces capability whitelist, Zod schema validation, and exponential backoff retry</li>
+            </ul>
+          </div>
+        
+      </div>
+    </div>
+
+    <sidebar>
+      <div class="sidebar-section">
+        <h3>Bounded Contexts</h3>
+        <ul class="cluster-list">
+          
+            <li class="edge-item">
+              <strong>Intake & Briefing Boundary</strong> (1 nodes)
+            </li>
+          
+            <li class="edge-item">
+              <strong>Core Cognitive Design Boundary</strong> (2 nodes)
+            </li>
+          
+            <li class="edge-item">
+              <strong>Security & Infrastructure Parallel Fork</strong> (2 nodes)
+            </li>
+          
+            <li class="edge-item">
+              <strong>Verification & Package Synthesis</strong> (3 nodes)
+            </li>
+          
+            <li class="edge-item">
+              <strong>Cognitive Memory & LLM Infrastructure</strong> (2 nodes)
+            </li>
+          
+        </ul>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Dependencies (10)</h3>
+        <ul class="edge-list">
+          
+            <li class="edge-item">
+              <span>user_prompt_intake</span>
+              <span class="edge-arrow">➔</span>
+              <span>requirements_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>requirements_agent</span>
+              <span class="edge-arrow">➔</span>
+              <span>architecture_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>architecture_agent</span>
+              <span class="edge-arrow">➔</span>
+              <span>security_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>architecture_agent</span>
+              <span class="edge-arrow">➔</span>
+              <span>cloud_cost_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>security_agent</span>
+              <span class="edge-arrow">➔</span>
+              <span>devsecops_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>cloud_cost_agent</span>
+              <span class="edge-arrow">➔</span>
+              <span>devsecops_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>devsecops_agent</span>
+              <span class="edge-arrow">➔</span>
+              <span>qa_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>qa_agent</span>
+              <span class="edge-arrow">➔</span>
+              <span>synthesis_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>rag_memory_context</span>
+              <span class="edge-arrow">➔</span>
+              <span>synthesis_agent</span>
+            </li>
+          
+            <li class="edge-item">
+              <span>llm_factory</span>
+              <span class="edge-arrow">➔</span>
+              <span>rag_memory_context</span>
+            </li>
+          
+        </ul>
+      </div>
+
+      
+      <div class="sidebar-section">
+        <h3>SOLID Compliance</h3>
+        <div class="solid-note">Single Responsibility: Each agent enforces strict Zod input/output contract schemas.</div><div class="solid-note">Open/Closed: LLM Provider Factory allows swapping model backends without touching agent logic.</div><div class="solid-note">Parallel Execution: Security and Cloud/Cost agents execute concurrently after Phase 2.</div>
+      </div>
+      
+    </sidebar>
+  </main>
+
+  <script>
+    const irData = {
+  "version": "2.17.0",
+  "meta": {
+    "title": "ArchitectAI — AI Agent Brain Cognitive Workflow",
+    "description": "7-Agent multi-phase cognitive reasoning pipeline, parallel execution graph, and RAG context memory flow.",
+    "preset": "signal-flow",
+    "theme": "dark",
+    "createdAt": "2026-09-17T12:25:49.755Z",
+    "solidNotes": [
+      "Single Responsibility: Each agent enforces strict Zod input/output contract schemas.",
+      "Open/Closed: LLM Provider Factory allows swapping model backends without touching agent logic.",
+      "Parallel Execution: Security and Cloud/Cost agents execute concurrently after Phase 2."
+    ]
+  },
+  "nodes": [
+    {
+      "id": "user_prompt_intake",
+      "label": "0. Prompt Intake & Normalizer",
+      "role": "interface",
+      "layer": "Intake Phase",
+      "boundedContext": "Intake & Briefing Boundary",
+      "responsibilities": [
+        "Normalizes unstructured user request into an Architectural Brief",
+        "Detects requirement ambiguities and generates interactive intake questions if required"
+      ]
+    },
+    {
+      "id": "requirements_agent",
+      "label": "1. Requirements Agent",
+      "role": "domain",
+      "layer": "Cognitive Specification",
+      "boundedContext": "Core Design Boundary",
+      "responsibilities": [
+        "Formulates functional and non-functional engineering requirements",
+        "Establishes acceptance criteria, priority matrices, and technical constraints"
+      ]
+    },
+    {
+      "id": "architecture_agent",
+      "label": "2. Architecture Agent",
+      "role": "domain",
+      "layer": "Cognitive Architecture",
+      "boundedContext": "Core Design Boundary",
+      "responsibilities": [
+        "Designs system component topology, bounded contexts, and SOLID notes",
+        "Compiles initial Archify IR structure and Mermaid C4 diagrams"
+      ]
+    },
+    {
+      "id": "security_agent",
+      "label": "3. Security Threat Agent (Parallel Fork)",
+      "role": "domain",
+      "layer": "Security Analysis",
+      "boundedContext": "Security & Infrastructure Fork",
+      "responsibilities": [
+        "Performs STRIDE threat modeling and OWASP Top 10 LLM risk audits",
+        "Generates authentication controls, RBAC policies, and mitigation strategies"
+      ]
+    },
+    {
+      "id": "cloud_cost_agent",
+      "label": "4. Cloud & Cost Agent (Parallel Fork)",
+      "role": "domain",
+      "layer": "Cloud Infrastructure",
+      "boundedContext": "Security & Infrastructure Fork",
+      "responsibilities": [
+        "Maps cloud resource choices across AWS/GCP services",
+        "Calculates cost estimates, scaling thresholds, and cost-safety guards"
+      ]
+    },
+    {
+      "id": "devsecops_agent",
+      "label": "5. DevSecOps Agent",
+      "role": "domain",
+      "layer": "Deployment Pipelines",
+      "boundedContext": "Verification & Synthesis Boundary",
+      "responsibilities": [
+        "Generates GitHub Actions CI/CD workflows and Docker container specs",
+        "Defines deployment runbooks, health checks, and rollback procedures"
+      ]
+    },
+    {
+      "id": "qa_agent",
+      "label": "6. QA & Testing Agent",
+      "role": "domain",
+      "layer": "Quality Assurance",
+      "boundedContext": "Verification & Synthesis Boundary",
+      "responsibilities": [
+        "Formulates automated test strategies, E2E Playwright scenarios, and Vitest unit suites",
+        "Enforces requirement traceability coverage metrics"
+      ]
+    },
+    {
+      "id": "synthesis_agent",
+      "label": "7. Synthesis & Consolidation Engine",
+      "role": "application",
+      "layer": "Package Synthesis",
+      "boundedContext": "Verification & Synthesis Boundary",
+      "responsibilities": [
+        "Consolidates all multi-agent outputs into a unified engineering specification package",
+        "Generates final Archify JSON IR, interactive HTML map, and ZIP bundle"
+      ]
+    },
+    {
+      "id": "rag_memory_context",
+      "label": "RAG Context Fitting & Memory Store",
+      "role": "infrastructure",
+      "layer": "Shared Memory",
+      "boundedContext": "Cognitive Memory Infrastructure",
+      "responsibilities": [
+        "Shared context store feeding prior agent outputs into downstream prompts",
+        "Performs chunking and vector similarity retrieval over project codebase"
+      ]
+    },
+    {
+      "id": "llm_factory",
+      "label": "LLM Provider Factory & Provider Pool",
+      "role": "external",
+      "layer": "LLM Execution Infrastructure",
+      "boundedContext": "Cognitive Memory Infrastructure",
+      "responsibilities": [
+        "Provider abstraction for OpenRouter, OpenAI, Bedrock, Ollama, Groq, Google Gemini",
+        "Enforces capability whitelist, Zod schema validation, and exponential backoff retry"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow_0_1",
+      "from": "user_prompt_intake",
+      "to": "requirements_agent",
+      "label": "1. Normalized Architectural Brief",
+      "flowType": "sync"
+    },
+    {
+      "id": "flow_1_2",
+      "from": "requirements_agent",
+      "to": "architecture_agent",
+      "label": "2. Functional Specs & Constraints",
+      "flowType": "sync"
+    },
+    {
+      "id": "flow_2_3",
+      "from": "architecture_agent",
+      "to": "security_agent",
+      "label": "3a. Parallel Fork: Topology to Security Engine",
+      "flowType": "async"
+    },
+    {
+      "id": "flow_2_4",
+      "from": "architecture_agent",
+      "to": "cloud_cost_agent",
+      "label": "3b. Parallel Fork: Topology to Cloud/Cost Engine",
+      "flowType": "async"
+    },
+    {
+      "id": "flow_3_4_5",
+      "from": "security_agent",
+      "to": "devsecops_agent",
+      "label": "4. Joined Parallel Output: Security Controls",
+      "flowType": "sync"
+    },
+    {
+      "id": "flow_4_5",
+      "from": "cloud_cost_agent",
+      "to": "devsecops_agent",
+      "label": "4. Joined Parallel Output: Topology Specs",
+      "flowType": "sync"
+    },
+    {
+      "id": "flow_5_6",
+      "from": "devsecops_agent",
+      "to": "qa_agent",
+      "label": "5. Pipeline Specs & Deployment Boundaries",
+      "flowType": "sync"
+    },
+    {
+      "id": "flow_6_7",
+      "from": "qa_agent",
+      "to": "synthesis_agent",
+      "label": "6. Test Plans & Traceability Specs",
+      "flowType": "sync"
+    },
+    {
+      "id": "flow_memory_all",
+      "from": "rag_memory_context",
+      "to": "synthesis_agent",
+      "label": "Context Memory Injection",
+      "flowType": "data"
+    },
+    {
+      "id": "flow_llm_execution",
+      "from": "llm_factory",
+      "to": "rag_memory_context",
+      "label": "Provider Inference & Token Metrics",
+      "flowType": "data"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "intake_cluster",
+      "name": "Intake & Briefing Boundary",
+      "nodes": [
+        "user_prompt_intake"
+      ],
+      "responsibilities": [
+        "Prompt intake",
+        "Ambiguity detection",
+        "Architectural brief creation"
+      ]
+    },
+    {
+      "id": "core_design_cluster",
+      "name": "Core Cognitive Design Boundary",
+      "nodes": [
+        "requirements_agent",
+        "architecture_agent"
+      ],
+      "responsibilities": [
+        "Requirements engineering",
+        "Component design",
+        "Bounded context mapping"
+      ]
+    },
+    {
+      "id": "security_cloud_cluster",
+      "name": "Security & Infrastructure Parallel Fork",
+      "nodes": [
+        "security_agent",
+        "cloud_cost_agent"
+      ],
+      "responsibilities": [
+        "Concurrent execution",
+        "STRIDE threat modeling",
+        "Cloud cost optimization"
+      ]
+    },
+    {
+      "id": "verification_synthesis_cluster",
+      "name": "Verification & Package Synthesis",
+      "nodes": [
+        "devsecops_agent",
+        "qa_agent",
+        "synthesis_agent"
+      ],
+      "responsibilities": [
+        "CI/CD pipeline generation",
+        "Test planning",
+        "Archify HTML & ZIP compilation"
+      ]
+    },
+    {
+      "id": "memory_infra_cluster",
+      "name": "Cognitive Memory & LLM Infrastructure",
+      "nodes": [
+        "rag_memory_context",
+        "llm_factory"
+      ],
+      "responsibilities": [
+        "Shared agent memory",
+        "RAG context fitting",
+        "Multi-provider LLM inference"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "cognitive_reasoning_story",
+      "title": "7-Agent Cognitive Reasoning Pipeline",
+      "description": "Trace of raw prompt intake through sequential and parallel multi-agent reasoning, RAG memory enrichment, and Archify HTML synthesis.",
+      "activeNodes": [
+        "user_prompt_intake",
+        "requirements_agent",
+        "architecture_agent",
+        "security_agent",
+        "cloud_cost_agent",
+        "devsecops_agent",
+        "qa_agent",
+        "synthesis_agent",
+        "rag_memory_context",
+        "llm_factory"
+      ],
+      "activeEdges": [
+        "flow_0_1",
+        "flow_1_2",
+        "flow_2_3",
+        "flow_2_4",
+        "flow_3_4_5",
+        "flow_4_5",
+        "flow_5_6",
+        "flow_6_7",
+        "flow_memory_all",
+        "flow_llm_execution"
+      ]
+    }
+  ]
+};
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      document.body.classList.toggle('light');
+    }
+
+    function filterNodes(query) {
+      const q = query.toLowerCase().trim();
+      const cards = document.querySelectorAll('.node-card');
+      cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if (!q || text.includes(q)) {
+          card.classList.remove('dimmed');
+          if (q && text.includes(q)) card.classList.add('highlighted');
+          else card.classList.remove('highlighted');
+        } else {
+          card.classList.add('dimmed');
+          card.classList.remove('highlighted');
+        }
+      });
+    }
+
+    async function triggerDownload(content, filename, mimeType) {
+      if (window.showSaveFilePicker) {
+        try {
+          const ext = filename.split('.').pop() || 'html';
+          const acceptMime = mimeType.startsWith('application/json') ? 'application/json' : 'text/html';
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: ext.toUpperCase() + ' File',
+              accept: { [acceptMime]: ['.' + ext] },
+            }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(content);
+          await writable.close();
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+        }
+      }
+
+      try {
+        const blob = new Blob([content], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          if (a.parentNode) a.parentNode.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 500);
+        return;
+      } catch (err) {
+        console.error('Blob download failed:', err);
+      }
+
+      try {
+        await navigator.clipboard.writeText(content);
+        alert('Download blocked by browser policy. File content has been copied to your clipboard!');
+      } catch (e) {
+        alert('Download failed. Please use File > Save Page As in your browser menu.');
+      }
+    }
+
+    async function exportJSON() {
+      const content = JSON.stringify(irData, null, 2);
+      const filename = 'architectai_ai_agent_brain_cognitive_workflow_archify.json';
+      await triggerDownload(content, filename, 'application/json');
+    }
+
+    async function downloadHTML() {
+      const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const filename = 'architectai_ai_agent_brain_cognitive_workflow_archify.html';
+      await triggerDownload(htmlContent, filename, 'text/html');
+    }
+  </script>
+</body>
+</html>

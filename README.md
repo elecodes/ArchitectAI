@@ -40,9 +40,9 @@ See [ROADMAP.md](ROADMAP.md) for planned features.
 - **Telemetry** — Per-generation metrics to Postgres, optionally mirrored to CloudWatch
 - **Evaluation & Model Intelligence** — Versioned golden software ideas dataset, Level 1 deterministic (Zod) and Level 2 semantic (LLM-as-Judge) evaluation, latency/cost benchmarking, and prompt versioning comparisons
 
-### Archify Engine & System Maps (v1.7.0)
+### Archify Engine, Automation & System Maps (v1.7.0)
 
-Integrated [Archify](https://github.com/tt-a1i/archify) engine produces structured JSON IR (`generateArchifyIR`) and self-contained interactive HTML system maps (`compileArchifyHtml`). Also features a visual snapshot comparison engine (`compareArchifyIR` / `compileArchifyDiffHtml`) that computes color-coded architectural diffs (*Before vs Delta vs After*) for PR reviews. See `docs/adr/0023-archify-interactive-diagrams-and-architecture-diff.md`.
+Integrated [Archify](https://github.com/tt-a1i/archify) engine produces structured JSON IR (`generateArchifyIR`), creation timestamp tracking (`meta.createdAt`), direct HTML export buttons (`Download HTML`), and self-contained interactive system maps (`compileArchifyHtml`). Includes diagram automation scripts (`npm run generate:diagrams`, `npm run generate:brain-flow`) and a visual snapshot comparison engine (`compareArchifyIR` / `compileArchifyDiffHtml`) computing color-coded architectural diffs (*Before vs Delta vs After*) for PR reviews. See `docs/adr/0023` and `docs/adr/0024`.
 
 ### Agent System & Model Intelligence (v1.6.0)
 

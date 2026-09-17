@@ -37,6 +37,7 @@ export interface ArchifyDiagramIR {
     description: string;
     preset: 'signal-flow' | 'blueprint' | 'classic' | 'minimal';
     theme: 'dark' | 'light';
+    createdAt?: string;
     solidNotes?: string[];
   };
   nodes: ArchifyNode[];
@@ -47,7 +48,8 @@ export interface ArchifyDiagramIR {
 
 export function generateArchifyIR(
   arch: any,
-  projectName: string = 'System Architecture'
+  projectName: string = 'System Architecture',
+  options?: { createdAt?: string }
 ): ArchifyDiagramIR {
   const sanitizeId = (name: string) => (name || 'component').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
   const components: any[] = Array.isArray(arch?.components) ? arch.components : [];
@@ -106,6 +108,8 @@ export function generateArchifyIR(
     },
   ];
 
+  const createdAt = options?.createdAt || new Date().toISOString();
+
   return {
     version: '2.17.0',
     meta: {
@@ -113,6 +117,7 @@ export function generateArchifyIR(
       description: `Interactive Archify System Map for ${projectName}`,
       preset: 'signal-flow',
       theme: 'dark',
+      createdAt,
       solidNotes: Array.isArray(arch?.solidNotes) ? arch.solidNotes : [],
     },
     nodes,
@@ -171,6 +176,7 @@ export function compileArchifyHtml(ir: ArchifyDiagramIR): string {
 
     .title-group h1 { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
     .title-group p { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .title-group .created-at { font-size: 0.75rem; color: var(--text-muted); opacity: 0.85; margin-top: 0.3rem; font-family: monospace; }
 
     .controls { display: flex; gap: 0.75rem; align-items: center; }
     .btn {
@@ -295,11 +301,13 @@ export function compileArchifyHtml(ir: ArchifyDiagramIR): string {
     <div class="title-group">
       <h1>${ir.meta.title}</h1>
       <p>${ir.meta.description}</p>
+      ${ir.meta.createdAt ? `<div class="created-at">Created: ${ir.meta.createdAt}</div>` : ''}
     </div>
     <div class="controls">
       <input type="text" id="searchInput" class="search-input" placeholder="Search node..." oninput="filterNodes(this.value)">
       <button class="btn" onclick="toggleTheme()">Toggle Theme</button>
       <button class="btn" onclick="exportJSON()">Export IR JSON</button>
+      <button class="btn" onclick="downloadHTML()">Download HTML</button>
     </div>
   </header>
 
@@ -392,14 +400,63 @@ export function compileArchifyHtml(ir: ArchifyDiagramIR): string {
       });
     }
 
-    function exportJSON() {
-      const blob = new Blob([JSON.stringify(irData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = '${ir.meta.title.toLowerCase().replace(/[^a-z0-9]/g, '_')}_archify.json';
-      a.click();
-      URL.revokeObjectURL(url);
+    async function triggerDownload(content, filename, mimeType) {
+      if (window.showSaveFilePicker) {
+        try {
+          const ext = filename.split('.').pop() || 'html';
+          const acceptMime = mimeType.startsWith('application/json') ? 'application/json' : 'text/html';
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: ext.toUpperCase() + ' File',
+              accept: { [acceptMime]: ['.' + ext] },
+            }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(content);
+          await writable.close();
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+        }
+      }
+
+      try {
+        const blob = new Blob([content], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          if (a.parentNode) a.parentNode.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 500);
+        return;
+      } catch (err) {
+        console.error('Blob download failed:', err);
+      }
+
+      try {
+        await navigator.clipboard.writeText(content);
+        alert('Download blocked by browser policy. File content has been copied to your clipboard!');
+      } catch (e) {
+        alert('Download failed. Please use File > Save Page As in your browser menu.');
+      }
+    }
+
+    async function exportJSON() {
+      const content = JSON.stringify(irData, null, 2);
+      const filename = '${ir.meta.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}_archify.json';
+      await triggerDownload(content, filename, 'application/json');
+    }
+
+    async function downloadHTML() {
+      const htmlContent = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+      const filename = '${ir.meta.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}_archify.html';
+      await triggerDownload(htmlContent, filename, 'text/html');
     }
   </script>
 </body>
